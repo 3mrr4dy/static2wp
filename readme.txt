@@ -4,7 +4,7 @@ Tags: landing page, html, static page, page template, upload
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.7.0
+Stable tag: 1.7.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -111,9 +111,13 @@ On the page itself — the plugin uses the page's excerpt as the meta descriptio
 
 == Changelog ==
 
-= 1.7.0 =
+= 1.7.1 =
+* UI: the admin screen and menu now use the Static2WP name.
+* New: automatic one-time migration from the legacy HTML Landing Pages data (hlp_landings / hlp_settings options, _hlp_landing meta, uploads/html-landing-pages) into the Static2WP namespace, deleting the legacy data. Runs on activation and on any load while legacy data exists, so in-place updates migrate too.
+* Uninstall now also clears the legacy namespace.
+= 1.7.1 =
 * Renamed: the plugin is now **Static2WP** (previously HTML Landing Pages). All prefixes, text domain, options and the uploads directory moved to the static2wp / s2wp_ namespace. Uploaded files keep working only if you migrate the old `hlp_landings` option to `s2wp_landings` (fresh installs need nothing).
-= 1.7.0 =
+= 1.7.1 =
 * Fix: on the block editor the canvas now mounts into the Gutenberg skeleton. A canvas still sitting in the hidden footer template is no longer treated as mounted, so the panel appears and the visual editor is no longer blank.
 * New: **Edit page text** reveal toggle — the classic textarea is kept (TinyMCE stays off so the tab spinner cannot hang); both classic and block editors un-hide when revealed.
 * i18n: remaining admin JS strings live in `HLP.strings`; `view_url` is encoded before it is written into an href; `wp_set_script_translations` is registered for the admin script.

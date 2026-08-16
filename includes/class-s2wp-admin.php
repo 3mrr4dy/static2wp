@@ -59,8 +59,8 @@ class S2WP_Admin {
 	 */
 	public function register_menu() {
 		add_pages_page(
-			__( 'Page files', 'static2wp' ),
-			__( 'Page file', 'static2wp' ),
+			__( 'Static2WP', 'static2wp' ),
+			__( 'Static2WP', 'static2wp' ),
 			'edit_pages',
 			self::MENU_SLUG,
 			array( $this, 'render_page' )
@@ -121,7 +121,7 @@ class S2WP_Admin {
 		$message = isset( $_GET['s2wp_message'] ) ? sanitize_text_field( wp_unslash( $_GET['s2wp_message'] ) ) : '';
 		?>
 		<div class="wrap s2wp-wrap">
-			<h1><?php esc_html_e( 'Page file', 'static2wp' ); ?></h1>
+			<h1><?php esc_html_e( 'Static2WP', 'static2wp' ); ?></h1>
 			<p class="s2wp-subtitle"><?php esc_html_e( 'Upload a file. We create a page for it. Visitors see the file — not the theme, not a builder.', 'static2wp' ); ?></p>
 
 			<?php if ( $notice ) : ?>
