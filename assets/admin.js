@@ -2,8 +2,8 @@
  * HTML Landing Pages — admin UI.
  *
  * Works in two contexts:
- *  - Pages → HTML Landing screen (full form, landings table)
- *  - Page-editor meta box (compact uploader, in-place refresh via metabox_html)
+ *  - Pages → Page file screen (full form, landings table)
+ *  - Page editor canvas (classic + block editor)
  *
  * All feedback uses native WordPress admin notices instead of browser alerts.
  */
@@ -31,10 +31,11 @@
 		var $notice = $(
 			'<div class="notice notice-' + type + ' is-dismissible hlp-notice">' +
 			'<p></p>' +
-			'<button type="button" class="notice-dismiss"><span class="screen-reader-text">Dismiss this notice.</span></button>' +
+			'<button type="button" class="notice-dismiss"><span class="screen-reader-text"></span></button>' +
 			'</div>'
 		);
 		$notice.find('p').text(message);
+		$notice.find('.screen-reader-text').text(HLP.strings.dismissNotice);
 
 		if ($('#hlp-canvas').length) {
 			$('#hlp-canvas').prepend($notice);
@@ -105,26 +106,7 @@
 	}
 
 	/* ---------------------------------------------------------------
-	 * Context helpers
-	 * ------------------------------------------------------------- */
-
-	function inMetabox() {
-		return $('#hlp-mb-inner').length > 0;
-	}
-
-	/**
-	 * Swap the meta box content with fresh server-rendered HTML and
-	 * re-bind the upload UI (the old nodes were replaced).
-	 *
-	 * @param {string} html Server-rendered meta box inner HTML.
-	 */
-	function swapMetabox(html) {
-		$('#hlp-mb-inner').replaceWith(html);
-		initUploadUI();
-	}
-
-	/* ---------------------------------------------------------------
-	 * Upload UI (admin screen form + meta box uploader)
+	 * Upload UI (admin screen form + editor canvas uploader)
 	 * ------------------------------------------------------------- */
 
 	function initUploadUI() {
@@ -233,10 +215,6 @@
 			return;
 		}
 		var pageId = $('#hlp-page').length ? $('#hlp-page').val() : '0';
-		if (inMetabox() && (!pageId || '0' === pageId)) {
-			showNotice(HLP.strings.noPage, 'warning');
-			return;
-		}
 
 		var data = new FormData();
 		data.append('action', 'hlp_save');
@@ -288,16 +266,17 @@
 	 * @param {Object} data Response data.
 	 */
 	function renderSuccess(data) {
+		var viewUrl = data.view_url ? encodeURI(data.view_url) : '';
 		var html =
 			'<div class="hlp-success">' +
 			'<span class="dashicons dashicons-yes-alt"></span>' +
 			'<div>' +
 			'<strong>' + escapeHtml(data.name) + '</strong> ' +
-			'<span class="hlp-badge hlp-badge-active">Active</span>' +
+			'<span class="hlp-badge hlp-badge-active">' + escapeHtml(HLP.strings.activeBadge) + '</span>' +
 			'<div class="hlp-success-actions">' +
-			'<a class="button button-primary" href="' + data.view_url + '" target="_blank" rel="noopener noreferrer">View page</a>' +
+			'<a class="button button-primary" href="' + viewUrl + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(HLP.strings.viewPage) + '</a>' +
 			'</div>' +
-			'<p class="hlp-success-note">Reload this page to manage your landings.</p>' +
+			'<p class="hlp-success-note">' + escapeHtml(HLP.strings.reloadNote) + '</p>' +
 			'</div>' +
 			'</div>';
 		$('#hlp-result').html(html).prop('hidden', false);
@@ -306,8 +285,9 @@
 	/* ---------------------------------------------------------------
 	 * Editor canvas: occupy the classic / block editor slot.
 	 * Classic: PHP already printed #hlp-canvas after the title.
-	 * Gutenberg: mount the footer template ONCE. No MutationObserver —
-	 * watching document.body made the tab spinner run forever.
+	 * Gutenberg: the same markup lives in a hidden #hlp-canvas-root
+	 * footer template — a canvas still inside that root is NOT mounted.
+	 * Lift it into the skeleton. No MutationObserver.
 	 * ------------------------------------------------------------- */
 
 	var canvasHtml = '';
@@ -315,9 +295,9 @@
 	function gutenbergMountTarget() {
 		var selectors = [
 			'.interface-interface-skeleton__content',
+			'.edit-post-layout__content',
 			'.edit-post-visual-editor',
-			'.editor-visual-editor',
-			'.edit-post-layout__content'
+			'.editor-visual-editor'
 		];
 		for (var i = 0; i < selectors.length; i++) {
 			var $target = $(selectors[i]).first();
@@ -328,20 +308,57 @@
 		return $();
 	}
 
+	function isInsideRoot($el) {
+		return $el.length > 0 && $el.closest('#hlp-canvas-root').length > 0;
+	}
+
+	function canvasNode() {
+		return $('#hlp-canvas').filter(function () {
+			return !isInsideRoot($(this));
+		});
+	}
+
+	function isCanvasMounted($canvas) {
+		if (!$canvas.length || isInsideRoot($canvas)) {
+			return false;
+		}
+		if ($canvas.closest('.interface-interface-skeleton__content, .edit-post-layout__content').length) {
+			return true;
+		}
+		if ($('#postdivrich').length) {
+			return true;
+		}
+		return false;
+	}
+
+	function syncEditorToggle() {
+		var $link = $('#hlp-show-editor');
+		if (!$link.length) {
+			return;
+		}
+		$link.text($('body').hasClass('hlp-editor-revealed') ? HLP.strings.hideEditor : HLP.strings.showEditor);
+	}
+
 	function markLandingState() {
-		var $canvas = $('#hlp-canvas');
+		var $canvas = canvasNode();
 		if (!$canvas.length || $canvas.hasClass('hlp-canvas-start')) {
 			return;
 		}
+		if (!isCanvasMounted($canvas)) {
+			return;
+		}
 		$('body').removeClass('hlp-picking-file').addClass('hlp-has-landing hlp-canvas-mounted');
+		syncEditorToggle();
 	}
 
 	function insertCanvas(html) {
 		if (!html) {
 			return false;
 		}
-		if ($('#hlp-canvas').length) {
-			$('#hlp-canvas').replaceWith(html);
+
+		var $existing = canvasNode();
+		if ($existing.length) {
+			$existing.replaceWith(html);
 			markLandingState();
 			return true;
 		}
@@ -377,7 +394,10 @@
 	}
 
 	function mountBlockCanvas() {
-		if ($('#hlp-canvas').length) {
+		var $canvas = $('#hlp-canvas');
+
+		// Classic (or a previous successful mount): already in the editor slot.
+		if ($canvas.length && !isInsideRoot($canvas)) {
 			markLandingState();
 			return true;
 		}
@@ -403,10 +423,6 @@
 			 */
 			if (document.body.className.indexOf('hlp-has-landing') !== -1) {
 				quietHiddenEditor();
-			}
-			if ($('#hlp-canvas').length) {
-				markLandingState();
-				return;
 			}
 
 			if (mountBlockCanvas()) {
@@ -445,6 +461,12 @@
 		$(this).hide();
 	});
 
+	$(document).on('click', '#hlp-show-editor', function (e) {
+		e.preventDefault();
+		$('body').toggleClass('hlp-editor-revealed');
+		syncEditorToggle();
+	});
+
 	/**
 	 * Shared post-processing of editor-origin AJAX responses.
 	 *
@@ -454,16 +476,13 @@
 		if (!data) {
 			return;
 		}
-		if (data.metabox_html) {
-			swapMetabox(data.metabox_html);
-		}
 		if (data.canvas_html) {
 			insertCanvas(data.canvas_html);
 		}
 	}
 
 	function editorContext() {
-		return inMetabox() || $('#hlp-canvas').length ? 'editor' : '';
+		return $('#hlp-canvas').length || $('#hlp-canvas-root').length ? 'editor' : '';
 	}
 
 	/* ---------------------------------------------------------------
@@ -589,19 +608,6 @@
 		$('.hlp-drop-ready').prop('hidden', true);
 	}
 
-	$(document).on('click', '.hlp-new-version', function () {
-		var $btn = $(this);
-		var picker = document.createElement('input');
-		picker.type = 'file';
-		picker.accept = '.html,.htm,.zip';
-		picker.addEventListener('change', function () {
-			if (picker.files && picker.files.length) {
-				uploadNewVersion(picker.files[0], $btn.data('id'), $btn.data('nonce'), $btn);
-			}
-		});
-		picker.click();
-	});
-
 	$(document).on('click keydown', '#hlp-canvas-drop', function (e) {
 		if ($(e.target).closest('#hlp-drop-confirm, #hlp-drop-cancel').length) {
 			return;
@@ -672,15 +678,22 @@
 			action: isDelete ? 'hlp_delete_version' : 'hlp_rollback',
 			id: $btn.data('id'),
 			v: v,
-			nonce: $btn.data('nonce'),
-			context: 'editor'
+			nonce: $btn.data('nonce')
 		};
+		var ctx = editorContext();
+		if (ctx) {
+			data.context = ctx;
+		}
 
 		$.post(HLP.ajaxUrl, data)
 			.done(function (resp) {
 				if (resp && resp.success) {
-					applyEditorHtml(resp.data);
-					showNotice(resp.data.message, 'success');
+					if (ctx) {
+						applyEditorHtml(resp.data);
+						showNotice(resp.data.message, 'success');
+					} else {
+						window.location.reload();
+					}
 				} else {
 					errorNotice(resp, null);
 					$btn.prop('disabled', false);
@@ -757,12 +770,6 @@
 	/* ---------------------------------------------------------------
 	 * Helpers
 	 * ------------------------------------------------------------- */
-
-	function renderLog(lines) {
-		$.each(lines, function (_, line) {
-			logLine(line, 'ok');
-		});
-	}
 
 	function logLine(text, kind) {
 		var $log = $('#hlp-log');

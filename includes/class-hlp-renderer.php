@@ -376,6 +376,11 @@ class HLP_Renderer {
 			return $html;
 		}
 
+		$doctype = '';
+		if ( preg_match( '/^\s*(<!DOCTYPE[^>]*>)/i', $html, $m ) ) {
+			$doctype = $m[1];
+		}
+
 		$dom                     = new DOMDocument();
 		$dom->preserveWhiteSpace = true;
 		$dom->formatOutput       = false;
@@ -436,7 +441,12 @@ class HLP_Renderer {
 			}
 		}
 
-		return $dom->saveHTML();
+		$out = $dom->saveHTML();
+		if ( $doctype && false === stripos( $out, '<!DOCTYPE' ) ) {
+			$out = $doctype . "\n" . ltrim( $out );
+		}
+
+		return $out;
 	}
 
 	/**

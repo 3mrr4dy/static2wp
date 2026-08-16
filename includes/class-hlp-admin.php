@@ -89,17 +89,20 @@ class HLP_Admin {
 					'noFile'         => __( 'Choose a file first.', 'html-landing-pages' ),
 					'badType'        => __( 'Only HTML or ZIP files are allowed.', 'html-landing-pages' ),
 					'tooBig'         => __( 'File is larger than 100 MB.', 'html-landing-pages' ),
-					'noPage'         => __( 'Name the page or pick an existing one.', 'html-landing-pages' ),
 					'uploading'      => __( 'Uploading…', 'html-landing-pages' ),
 					'error'          => __( 'Something went wrong. Try again.', 'html-landing-pages' ),
-					'metaboxDone'    => __( 'Done. The page is live.', 'html-landing-pages' ),
 					'confirmVersion' => __( 'Delete this older file?', 'html-landing-pages' ),
 					'confirmDelete'  => __( 'Remove the file from this page? The page itself stays.', 'html-landing-pages' ),
 					'showEditor'     => __( 'Edit page text', 'html-landing-pages' ),
 					'hideEditor'     => __( 'Hide page text', 'html-landing-pages' ),
+					'activeBadge'    => __( 'Active', 'html-landing-pages' ),
+					'viewPage'       => __( 'View page', 'html-landing-pages' ),
+					'reloadNote'     => __( 'Reload this page to manage your landings.', 'html-landing-pages' ),
+					'dismissNotice'  => __( 'Dismiss this notice.', 'html-landing-pages' ),
 				),
 			)
 		);
+		wp_set_script_translations( 'hlp-admin', 'html-landing-pages' );
 	}
 
 	/* ---------------------------------------------------------------------

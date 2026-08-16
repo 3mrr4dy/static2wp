@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin uninstall: remove plugin options and uploaded landing files.
+ * Plugin uninstall: remove plugin options, page index meta, and uploaded landing files.
  *
  * The WordPress pages the landings were assigned to are left untouched.
  *
@@ -9,6 +9,20 @@
 
 if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
+}
+
+$landings = get_option( 'hlp_landings', array() );
+$page_ids = array();
+if ( is_array( $landings ) ) {
+	foreach ( $landings as $record ) {
+		if ( ! empty( $record['page_id'] ) ) {
+			$page_ids[] = (int) $record['page_id'];
+		}
+	}
+}
+
+foreach ( $page_ids as $page_id ) {
+	delete_post_meta( $page_id, '_hlp_landing' );
 }
 
 delete_option( 'hlp_landings' );

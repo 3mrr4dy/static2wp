@@ -64,7 +64,7 @@ class HLP_Metabox {
 			return; // Keep the block canvas alive — our panel mounts into it.
 		}
 
-		remove_post_type_support( 'page', 'editor' );
+		// Keep the textarea (Save still works) but skip TinyMCE so the tab spinner cannot hang.
 		add_filter( 'user_can_richedit', '__return_false' );
 	}
 
@@ -95,27 +95,20 @@ class HLP_Metabox {
 					'noFile'         => __( 'Choose a file first.', 'html-landing-pages' ),
 					'badType'        => __( 'Only HTML or ZIP files are allowed.', 'html-landing-pages' ),
 					'tooBig'         => __( 'File is larger than 100 MB.', 'html-landing-pages' ),
-					'noPage'         => __( 'Name the page or pick an existing one.', 'html-landing-pages' ),
 					'uploading'      => __( 'Uploading…', 'html-landing-pages' ),
 					'error'          => __( 'Something went wrong. Try again.', 'html-landing-pages' ),
-					'metaboxDone'    => __( 'Done. Visitors will see the file.', 'html-landing-pages' ),
 					'confirmVersion' => __( 'Delete this older file?', 'html-landing-pages' ),
 					'confirmDelete'  => __( 'Remove the file from this page? The page itself stays.', 'html-landing-pages' ),
 					'showEditor'     => __( 'Edit page text', 'html-landing-pages' ),
 					'hideEditor'     => __( 'Hide page text', 'html-landing-pages' ),
+					'activeBadge'    => __( 'Active', 'html-landing-pages' ),
+					'viewPage'       => __( 'View page', 'html-landing-pages' ),
+					'reloadNote'     => __( 'Reload this page to manage your landings.', 'html-landing-pages' ),
+					'dismissNotice'  => __( 'Dismiss this notice.', 'html-landing-pages' ),
 				),
 			)
 		);
-	}
-
-	/**
-	 * Kept for AJAX responses that still send metabox_html.
-	 *
-	 * @param WP_Post $post Current page.
-	 * @return string
-	 */
-	public static function get_inner_html( $post ) {
-		return '';
+		wp_set_script_translations( 'hlp-admin', 'html-landing-pages' );
 	}
 
 	/**
@@ -212,6 +205,7 @@ class HLP_Metabox {
 					<button type="button" class="button button-small hlp-delete" data-id="<?php echo esc_attr( $id ); ?>" data-nonce="<?php echo esc_attr( $nonce_d ); ?>">
 						<?php esc_html_e( 'Remove file', 'html-landing-pages' ); ?>
 					</button>
+					<a href="#" id="hlp-show-editor" class="button button-small"><?php esc_html_e( 'Edit page text', 'html-landing-pages' ); ?></a>
 				</div>
 			</div>
 
@@ -246,9 +240,14 @@ class HLP_Metabox {
 			<?php if ( count( $versions ) > 1 ) : ?>
 				<ul class="hlp-versions">
 					<?php foreach ( array_reverse( $versions ) as $version ) : ?>
-						<?php $is_current = ( (int) $version['v'] === $current_v ); ?>
+						<?php
+						$is_current  = ( (int) $version['v'] === $current_v );
+						$created_raw = ! empty( $version['created'] ) ? $version['created'] : '';
+						$created_ts  = $created_raw ? strtotime( $created_raw ) : false;
+						$created_fmt = $created_ts ? date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $created_ts ) : '';
+						?>
 						<li class="<?php echo $is_current ? 'hlp-version-current' : ''; ?>">
-							<span><?php echo esc_html( $version['created'] ); ?></span>
+							<span><?php echo esc_html( $created_fmt ); ?></span>
 							<?php if ( $is_current ) : ?>
 								<span><?php esc_html_e( 'Current', 'html-landing-pages' ); ?></span>
 							<?php else : ?>

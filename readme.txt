@@ -2,92 +2,86 @@
 Contributors: amrrady
 Tags: landing page, html, static page, page template, upload
 Requires at least: 5.8
-Tested up to: 6.8
+Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.3.6
+Stable tag: 1.6.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Upload one HTML file (or a ZIP with assets) and assign it to any WordPress page — that page is served as a full standalone landing page.
+Upload an HTML or ZIP file and that page shows the file to visitors — not the theme. Create a page from a file, or attach one while editing.
 
 == Description ==
 
-Have a ready-made landing page (an exported HTML file, a Themeforest landing, an AI-generated page) and want it live on your site without touching your theme? This plugin does exactly that:
+Have a ready-made landing page (an exported HTML file, a ThemeForest landing, an AI-generated page) and want it live on your site without touching your theme? This plugin does exactly that:
 
-1. Open any WordPress page in the editor — the **HTML Landing Page** box is right there.
-2. Drop a single `.html` file, or a `.zip` containing your `index.html` plus `css/`, `js/`, `images/` folders.
-3. Done — the landing is active immediately. (You can also manage everything centrally under **Pages → HTML Landing**.)
+1. Go to **Pages → Page file** and drop a single `.html` file, or a `.zip` containing your `index.html` plus `css/`, `js/`, `images/` folders. The plugin creates a new WordPress page for it (or you can attach the file to an existing page).
+2. Or open any page in the editor and click **Show a file on this page**.
+3. Done — visitors see the file, not the theme and not a builder.
 
 = What visitors see =
 
 * Your uploaded HTML **completely takes over** the chosen page: its own `<head>`, styles and scripts. The theme header, footer and menus are not loaded.
-* Relative links inside a ZIP (images, stylesheets, scripts, even extra .html files) are rewritten automatically to the uploads folder, so everything just works.
-* The WordPress page itself is untouched — deactivate the landing anytime and the normal page is back.
+* Relative links inside a ZIP (images, stylesheets, scripts, extra `.html` files, `poster`, lazy-load `data-src`) are rewritten automatically to the uploads folder.
+* Deactivate the file anytime and the normal WordPress page is back.
 
 = Page-editor integration =
 
-* **Meta box on every page**: upload, activate/deactivate, replace file, or remove the landing — without leaving the editor. The box refreshes in place, no page reload.
-* **Landing column** in the Pages list shows status at a glance.
-* Landing name defaults to the page title — it feels like part of the page, because it is.
-
-= Content safety warnings =
-
-A landing hides the page's existing content from visitors (never deletes it). The plugin makes this impossible to miss:
-
-* **Editor notice**: a prominent warning on top of the page editor while a landing is active, with one-click *View* and *Deactivate* links.
-* **Builder detection**: pages built with **Elementor**, the **block editor**, or the **classic editor** are detected — warnings name the exact builder, and the page dropdown annotates such pages *before* you pick them.
-* **Manager flags**: the landings table and Pages list column mark pages whose builder content is currently hidden.
+* **Editor canvas** occupies the content slot in both the block editor and the classic editor.
+* **No file yet**: a **Show a file on this page** button sits above the visual editor. The editor stays visible until you click it.
+* **File assigned**: a live status panel (view, show file / use normal page, remove file) plus **Edit page text** to reveal the WordPress editor again.
+* **Replace file** is behind an explicit confirm — drop or choose a file, then click **Use this file**.
+* **Versions row** appears when more than one file has been uploaded: roll back or delete older files.
+* **File column** in the Pages list shows On / Off at a glance.
 
 = Landing manager =
 
-* **Stats bar**: totals for all / active / inactive landings at a glance.
-* **Rich table**: landing name with entry file, linked page with slug, type, file count + total size, status, last-updated date.
-* **Live filter** to find a landing instantly.
-* **Health checks**: "Page deleted" and "Files missing" badges surface problems before your visitors do.
-* **Empty state** guides first-time users.
+* **Pages → Page file** is the central screen: upload a file to create a page, or attach it to an existing unused page.
+* Table of pages that already have a file: view, edit, switch visitors between the file and the normal page, or remove the file.
+* Live search filter.
 
 = Global tracking codes (GTM & co.) =
 
-* Paste your **head code** (GTM script, analytics, pixels) and **body code** (GTM noscript) once in Pages → HTML Landing → Global settings.
-* Injected into **landing pages** (which bypass the theme) and — optionally — into **all regular pages/posts** too, so one code covers the whole public site.
+* Paste your **head code** (GTM script, analytics, pixels) and **body code** (GTM noscript) once under Pages → Page file → Tracking codes.
+* Injected into **landing pages** (which bypass the theme) and — optionally — into **all regular pages/posts** too.
 
-= SEO meta injection =
+= SEO =
 
-Because full-takeover bypasses your SEO plugin, the plugin can inject meta derived from the WordPress page into the landing HTML — only tags your HTML doesn't already define:
+Because full-takeover bypasses the theme, the plugin inherits WordPress (and SEO-plugin) head output for the page, and can fill remaining gaps from the page title, excerpt, permalink and featured image:
 
 * `<title>` from the page title
 * `<meta name="description">` from the page excerpt
-* canonical link, Open Graph (title, description, URL, type), `og:image` from the page's featured image, Twitter card
+* canonical link, Open Graph (title, description, URL, type), `og:image` from the featured image, Twitter card
 
 = Management =
 
-* **Activate / Deactivate** any landing with one click.
-* **Replace file** re-uploads the HTML/ZIP while keeping the same page assignment.
-* **Delete** removes the landing files; the WordPress page is kept.
-* One landing per page — pages that are already used are removed from the dropdown.
+* **Show file / Use normal page** with one click.
+* **Replace file** uploads a new version while keeping the same page assignment.
+* **Remove file** deletes the landing files; the WordPress page is kept.
+* One file per page — pages that already have a file are omitted from the attach dropdown.
 
 = Safety =
 
-* Uploads are validated (.html/.zip only, 100 MB max).
-* ZIP extraction blocks unsafe paths (zip-slip) and executable files (.php, .sh, …).
-* Password-protected pages keep their password prompt.
-* Only users with the `edit_pages` capability can manage landings; saving raw tracking code additionally requires `unfiltered_html`.
+* Uploads are validated (`.html` / `.zip` only, 100 MB max; HTML entry capped at 2 MB).
+* ZIP members are extracted one-by-one onto an allow-list of extensions (no `extractTo()`, no symlinks). SVG is blocked by design.
+* Publishing raw HTML requires the `unfiltered_html` capability. Creating a new page requires `publish_pages`; attaching to an existing page requires `edit_post` for that page.
+* Takeover responses send `nocache` headers so a page cache cannot pin stale HTML after deactivate or rollback.
+* Saving raw tracking code additionally requires `unfiltered_html`.
 
 == Installation ==
 
 1. Upload the `html-landing-pages` folder to `/wp-content/plugins/` (or install the ZIP via Plugins → Add New → Upload).
 2. Activate the plugin.
-3. Open any page in the editor and use the **HTML Landing Page** box — or go to **Pages → HTML Landing**.
+3. Go to **Pages → Page file** to publish a file as a new page — or open any page and click **Show a file on this page**.
 
 == Frequently Asked Questions ==
 
 = Does it change my theme or my page content? =
 
-No. The plugin only intercepts the page on the frontend while the landing is active. Your page content in the editor stays exactly as it was.
+No. The plugin only intercepts the page on the frontend while the file is active. Your page content in the editor stays exactly as it was. Use **Edit page text** on the canvas if you want to work on that content again.
 
 = What happens to links inside my HTML? =
 
-Relative `src`, `href`, `srcset` and CSS `url(...)` references are rewritten to the landing's uploads folder at serve time. Absolute URLs (https://…), anchors (#…), `mailto:` and `tel:` links are left untouched.
+Relative `src`, `href`, `srcset`, `poster`, common lazy-load attributes and CSS `url(...)` references are rewritten to the landing's uploads folder at serve time. Absolute URLs (https://…), anchors (#…), `mailto:` and `tel:` links are left untouched.
 
 = My ZIP has no index.html =
 
@@ -95,21 +89,48 @@ The first HTML file found is used as the entry page instead.
 
 = Can two landings share one page? =
 
-No — one landing per page. Create another WordPress page for the second landing.
+No — one file per page. Create another WordPress page for the second file.
 
 = Does it work with a static homepage? =
 
-Yes. You can assign a landing to the page set as your homepage under Settings → Reading.
+Yes. You can assign a file to the page set as your homepage under Settings → Reading.
 
 = Will my GTM/analytics fire on landing pages? =
 
-Yes — paste it once under Pages → HTML Landing → Global settings. It's injected into every landing page, and optionally into all regular pages and posts as well.
+Yes — paste it once under Pages → Page file → Tracking codes. It's injected into every landing page, and optionally into all regular pages and posts as well.
 
 = Where do I set the meta description for a landing? =
 
 On the page itself — the plugin uses the page's excerpt as the meta description and its featured image as `og:image`.
 
+= Limitations =
+
+* Uploaded files live under the WordPress uploads directory and are served as static files. Do not use this plugin on pages that require password privacy — anyone who knows (or guesses) the uploads URL can fetch the HTML and assets directly.
+* Relative paths built in inline JavaScript are not rewritten.
+* SVG uploads are blocked by design (they can execute script when opened directly).
+
 == Changelog ==
+
+= 1.6.0 =
+* Fix: on the block editor the canvas now mounts into the Gutenberg skeleton. A canvas still sitting in the hidden footer template is no longer treated as mounted, so the panel appears and the visual editor is no longer blank.
+* New: **Edit page text** reveal toggle — the classic textarea is kept (TinyMCE stays off so the tab spinner cannot hang); both classic and block editors un-hide when revealed.
+* i18n: remaining admin JS strings live in `HLP.strings`; `view_url` is encoded before it is written into an href; `wp_set_script_translations` is registered for the admin script.
+* Uninstall now deletes the `_hlp_landing` page-meta index before removing options and files.
+* URL rewrite preserves the original doctype when libxml drops it.
+* Docs: readme matches the 1.6 product (Pages → Page file, editor canvas, limitations).
+
+= 1.5.0 =
+* Security: ZIP members are extracted via `getFromIndex` + `file_put_contents` onto an allow-list (no `extractTo()`, no symlinks), with realpath containment and a 2 MB HTML cap.
+* Security: publishing a landing or a new version requires `unfiltered_html`; creating a page requires `publish_pages`; attaching to an existing page requires `edit_post`. Auto-drafts are rejected.
+* Security: GET deactivate handler removed; takeover responses send `nocache` headers; `template_redirect` runs at priority 11 and skips feeds, embeds and robots.
+* Hardened uploads directory (`index.php` / `.htaccess`); post-meta index `_hlp_landing` for the public lookup.
+* Admin-bar markup is stripped from takeovers so logged-in viewing no longer dumps an unstyled bar over the landing.
+* Tab-spinner fixes for the hidden classic editor.
+
+= 1.4.0 =
+* Simplified flow: **Pages → Page file** creates a new page from an uploaded file (or attaches it to an existing page).
+* Editor canvas replaces the side meta box — **Show a file on this page**, live status panel, replace behind an explicit confirm, versions row.
+* Removed the stats bar, builder warnings, and the editor-notice deactivate link.
 
 = 1.3.6 =
 * Editor canvas is a file drop zone for a new version. The live preview iframe is gone.

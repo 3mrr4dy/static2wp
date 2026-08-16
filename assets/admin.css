@@ -192,7 +192,7 @@
 	align-items: flex-start;
 	background: #f0faf1;
 	border: 1px solid #00a32a33;
-	border-left: 4px solid #00a32a;
+	border-inline-start: 4px solid #00a32a;
 	border-radius: 6px;
 	padding: 14px 16px;
 }
@@ -226,7 +226,8 @@
 }
 
 .hlp-actions .button {
-	margin: 0 4px 4px 0;
+	margin-block: 0 4px;
+	margin-inline: 0 4px;
 }
 
 .hlp-badge {
@@ -353,7 +354,8 @@
 }
 
 .hlp-mb-actions .button {
-	margin: 0 4px 4px 0;
+	margin-block: 0 4px;
+	margin-inline: 0 4px;
 }
 
 /* Stats bar */
@@ -472,7 +474,7 @@
 	align-items: flex-start;
 	background: #fcf9e8;
 	border: 1px solid #f0e6c0;
-	border-left: 4px solid #dba617;
+	border-inline-start: 4px solid #dba617;
 	border-radius: 4px;
 	padding: 8px 10px;
 	margin: 10px 0;
@@ -537,6 +539,8 @@
 
 body.hlp-picking-file #postdivrich,
 body.hlp-picking-file #elementor-switch-mode,
+body.hlp-picking-file .edit-post-visual-editor,
+body.hlp-picking-file .editor-visual-editor,
 body.hlp-has-landing:not(.block-editor-page):not(.hlp-editor-revealed) #postdivrich,
 body.hlp-has-landing:not(.hlp-editor-revealed) #hlp_landing,
 body.hlp-has-landing:not(.hlp-editor-revealed) #elementor-switch-mode {
