@@ -2,7 +2,7 @@
 /**
  * Data + filesystem layer: landing records (option) and uploaded files (uploads dir).
  *
- * @package HTML_Landing_Pages
+ * @package Static2WP
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -10,19 +10,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class HLP_Store
+ * Class S2WP_Store
  */
-class HLP_Store {
+class S2WP_Store {
 
 	/**
 	 * Option key holding all landing records, keyed by landing ID.
 	 */
-	const OPTION = 'hlp_landings';
+	const OPTION = 's2wp_landings';
 
 	/**
 	 * Subdirectory (inside uploads) holding all landing files.
 	 */
-	const BASE_DIR = 'html-landing-pages';
+	const BASE_DIR = 'static2wp';
 
 	/**
 	 * Only these file extensions may be extracted from an uploaded ZIP.
@@ -44,7 +44,7 @@ class HLP_Store {
 	/**
 	 * Option key holding global plugin settings.
 	 */
-	const SETTINGS_OPTION = 'hlp_settings';
+	const SETTINGS_OPTION = 's2wp_settings';
 
 	/**
 	 * Get global settings with defaults.
@@ -106,7 +106,7 @@ class HLP_Store {
 	/**
 	 * Find the landing assigned to a page (any status).
 	 *
-	 * A `_hlp_landing` post-meta index avoids scanning the whole option on
+	 * A `_s2wp_landing` post-meta index avoids scanning the whole option on
 	 * the public hot path; the option stays the source of truth.
 	 *
 	 * @param int    $page_id    Page ID.
@@ -121,7 +121,7 @@ class HLP_Store {
 
 		$all = self::get_all();
 
-		$meta_id = get_post_meta( $page_id, '_hlp_landing', true );
+		$meta_id = get_post_meta( $page_id, '_s2wp_landing', true );
 		if ( $meta_id && isset( $all[ $meta_id ] ) && (int) $all[ $meta_id ]['page_id'] === $page_id ) {
 			if ( $meta_id === $exclude_id ) {
 				return null;
@@ -130,12 +130,12 @@ class HLP_Store {
 			return $all[ $meta_id ];
 		}
 		if ( $meta_id ) {
-			delete_post_meta( $page_id, '_hlp_landing' ); // Stale index.
+			delete_post_meta( $page_id, '_s2wp_landing' ); // Stale index.
 		}
 
 		foreach ( $all as $id => $record ) {
 			if ( (int) $record['page_id'] === $page_id && $id !== $exclude_id ) {
-				update_post_meta( $page_id, '_hlp_landing', $id );
+				update_post_meta( $page_id, '_s2wp_landing', $id );
 				$record['id'] = $id;
 				return $record;
 			}
@@ -167,11 +167,11 @@ class HLP_Store {
 
 		// Drop a stale index from a previous page owner.
 		if ( ! empty( $data['page_id'] ) ) {
-			$old = get_post_meta( (int) $data['page_id'], '_hlp_landing', true );
+			$old = get_post_meta( (int) $data['page_id'], '_s2wp_landing', true );
 			if ( $old && $old !== $id ) {
-				delete_post_meta( (int) $data['page_id'], '_hlp_landing' );
+				delete_post_meta( (int) $data['page_id'], '_s2wp_landing' );
 			}
-			update_post_meta( (int) $data['page_id'], '_hlp_landing', $id );
+			update_post_meta( (int) $data['page_id'], '_s2wp_landing', $id );
 		}
 	}
 
@@ -183,7 +183,7 @@ class HLP_Store {
 	public static function delete( $id ) {
 		$all = self::get_all();
 		if ( isset( $all[ $id ]['page_id'] ) ) {
-			delete_post_meta( (int) $all[ $id ]['page_id'], '_hlp_landing' );
+			delete_post_meta( (int) $all[ $id ]['page_id'], '_s2wp_landing' );
 		}
 		unset( $all[ $id ] );
 		update_option( self::OPTION, $all, false );
@@ -197,7 +197,7 @@ class HLP_Store {
 	 * @return string
 	 */
 	public static function new_id() {
-		return 'hlp_' . strtolower( wp_generate_password( 12, false, false ) );
+		return 's2wp_' . strtolower( wp_generate_password( 12, false, false ) );
 	}
 
 	/**
@@ -275,30 +275,30 @@ class HLP_Store {
 		$ext = strtolower( pathinfo( $file['name'], PATHINFO_EXTENSION ) );
 
 		if ( ! wp_mkdir_p( $dir ) ) {
-			throw new Exception( __( 'Could not create the landing directory.', 'html-landing-pages' ) );
+			throw new Exception( __( 'Could not create the landing directory.', 'static2wp' ) );
 		}
 		self::harden_base_dir();
 
 		if ( in_array( $ext, array( 'html', 'htm' ), true ) ) {
 			$target = $dir . '/index.html';
 			if ( ! move_uploaded_file( $file['tmp_name'], $target ) ) {
-				throw new Exception( __( 'Could not store the uploaded file.', 'html-landing-pages' ) );
+				throw new Exception( __( 'Could not store the uploaded file.', 'static2wp' ) );
 			}
-			$log[] = __( 'Stored single HTML file as index.html.', 'html-landing-pages' );
+			$log[] = __( 'Stored single HTML file as index.html.', 'static2wp' );
 			return array( 'entry' => 'index.html', 'type' => 'html', 'log' => $log );
 		}
 
 		if ( 'zip' !== $ext ) {
-			throw new Exception( __( 'Only .html and .zip files are supported.', 'html-landing-pages' ) );
+			throw new Exception( __( 'Only .html and .zip files are supported.', 'static2wp' ) );
 		}
 
 		if ( ! class_exists( 'ZipArchive' ) ) {
-			throw new Exception( __( 'The PHP ZipArchive extension is not available on this server.', 'html-landing-pages' ) );
+			throw new Exception( __( 'The PHP ZipArchive extension is not available on this server.', 'static2wp' ) );
 		}
 
 		$zip = new ZipArchive();
 		if ( true !== $zip->open( $file['tmp_name'] ) ) {
-			throw new Exception( __( 'The uploaded file is not a valid ZIP archive.', 'html-landing-pages' ) );
+			throw new Exception( __( 'The uploaded file is not a valid ZIP archive.', 'static2wp' ) );
 		}
 
 		/*
@@ -329,25 +329,25 @@ class HLP_Store {
 			}
 			if ( ! preg_match( '/\.(?:' . self::ALLOW_EXT . ')$/i', $name ) ) {
 				/* translators: %s: file name inside the ZIP */
-				$log[] = sprintf( __( 'Skipped file (type not allowed): %s', 'html-landing-pages' ), $name );
+				$log[] = sprintf( __( 'Skipped file (type not allowed): %s', 'static2wp' ), $name );
 				continue;
 			}
 			if ( preg_match( '/\.html?$/i', $name ) && (int) $stat['size'] > self::MAX_HTML ) {
 				/* translators: %s: file name inside the ZIP */
-				$log[] = sprintf( __( 'Skipped HTML file over 2 MB: %s', 'html-landing-pages' ), $name );
+				$log[] = sprintf( __( 'Skipped HTML file over 2 MB: %s', 'static2wp' ), $name );
 				continue;
 			}
 			$total_size += (int) $stat['size'];
 			if ( $total_size > 524288000 ) { // 500 MB uncompressed.
 				$zip->close();
-				throw new Exception( __( 'The ZIP expands to more than 500 MB — refusing to extract it.', 'html-landing-pages' ) );
+				throw new Exception( __( 'The ZIP expands to more than 500 MB — refusing to extract it.', 'static2wp' ) );
 			}
 			$allowed[ $i ] = $name;
 		}
 
 		if ( empty( $allowed ) ) {
 			$zip->close();
-			throw new Exception( __( 'The ZIP contains no usable files.', 'html-landing-pages' ) );
+			throw new Exception( __( 'The ZIP contains no usable files.', 'static2wp' ) );
 		}
 
 		/*
@@ -362,36 +362,36 @@ class HLP_Store {
 			$parent = dirname( $target );
 			if ( ! is_dir( $parent ) && ! wp_mkdir_p( $parent ) ) {
 				$zip->close();
-				throw new Exception( __( 'Could not extract the ZIP archive.', 'html-landing-pages' ) );
+				throw new Exception( __( 'Could not extract the ZIP archive.', 'static2wp' ) );
 			}
 			$parent_real = realpath( $parent );
 			if ( false === $dir_real || false === $parent_real || 0 !== strpos( $parent_real, $dir_real ) ) {
 				$zip->close();
-				throw new Exception( __( 'The ZIP contains an unsafe path.', 'html-landing-pages' ) );
+				throw new Exception( __( 'The ZIP contains an unsafe path.', 'static2wp' ) );
 			}
 			$contents = $zip->getFromIndex( $index );
 			if ( false === $contents || false === file_put_contents( $target, $contents ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
 				$zip->close();
-				throw new Exception( __( 'Could not extract the ZIP archive.', 'html-landing-pages' ) );
+				throw new Exception( __( 'Could not extract the ZIP archive.', 'static2wp' ) );
 			}
 		}
 		$zip->close();
 
 		/* translators: %d: number of extracted files */
-		$log[] = sprintf( _n( 'Extracted %d file.', 'Extracted %d files.', count( $allowed ), 'html-landing-pages' ), count( $allowed ) );
+		$log[] = sprintf( _n( 'Extracted %d file.', 'Extracted %d files.', count( $allowed ), 'static2wp' ), count( $allowed ) );
 
 		// If the ZIP wrapped everything in a single folder, move its contents up.
 		$root = self::resolve_root( $dir );
 		if ( $root !== $dir ) {
 			self::move_contents_up( $root, $dir );
 			/* translators: %s: folder name */
-			$log[] = sprintf( __( 'Detected wrapping folder "%s" — moved contents up.', 'html-landing-pages' ), basename( $root ) );
+			$log[] = sprintf( __( 'Detected wrapping folder "%s" — moved contents up.', 'static2wp' ), basename( $root ) );
 		}
 
 		// Pick the entry HTML file: shallowest index.html wins, else first HTML.
 		$html_files = self::find_files( $dir, '/\.html?$/i' );
 		if ( empty( $html_files ) ) {
-			throw new Exception( __( 'No .html file found in the uploaded ZIP.', 'html-landing-pages' ) );
+			throw new Exception( __( 'No .html file found in the uploaded ZIP.', 'static2wp' ) );
 		}
 		usort(
 			$html_files,
@@ -410,7 +410,7 @@ class HLP_Store {
 		if ( '' === $entry ) {
 			$entry = $html_files[0];
 			/* translators: %s: file name */
-			$log[] = sprintf( __( 'No index.html found — using "%s" as the entry page.', 'html-landing-pages' ), $entry );
+			$log[] = sprintf( __( 'No index.html found — using "%s" as the entry page.', 'static2wp' ), $entry );
 		}
 
 		return array( 'entry' => $entry, 'type' => 'zip', 'log' => $log );
@@ -514,12 +514,12 @@ class HLP_Store {
 		$page    = $page_id ? get_post( $page_id ) : null;
 
 		if ( ! $page && ! current_user_can( 'publish_pages' ) ) {
-			$outcome['error'] = __( 'You are not allowed to publish new pages.', 'html-landing-pages' );
+			$outcome['error'] = __( 'You are not allowed to publish new pages.', 'static2wp' );
 			return $outcome;
 		}
 
 		if ( $page && ! current_user_can( 'edit_post', $page->ID ) ) {
-			$outcome['error'] = __( 'You are not allowed to edit that page.', 'html-landing-pages' );
+			$outcome['error'] = __( 'You are not allowed to edit that page.', 'static2wp' );
 			return $outcome;
 		}
 
@@ -538,30 +538,30 @@ class HLP_Store {
 				true
 			);
 			if ( is_wp_error( $page_id ) || ! $page_id ) {
-				$outcome['error'] = __( 'Could not create the page. Please try again.', 'html-landing-pages' );
+				$outcome['error'] = __( 'Could not create the page. Please try again.', 'static2wp' );
 				return $outcome;
 			}
 			$page = get_post( $page_id );
 		}
 
 		if ( ! $page || 'page' !== $page->post_type ) {
-			$outcome['error'] = __( 'Please choose a valid page.', 'html-landing-pages' );
+			$outcome['error'] = __( 'Please choose a valid page.', 'static2wp' );
 			return $outcome;
 		}
 
 		if ( 'auto-draft' === $page->post_status ) {
 			// Matches the editor UI: unsaved pages are rejected, never published silently.
-			$outcome['error'] = __( 'Save the page first, then upload the file.', 'html-landing-pages' );
+			$outcome['error'] = __( 'Save the page first, then upload the file.', 'static2wp' );
 			return $outcome;
 		}
 
 		if ( self::find_by_page( $page_id ) ) {
-			$outcome['error'] = __( 'That page already has a landing assigned. Replace its file or delete it first.', 'html-landing-pages' );
+			$outcome['error'] = __( 'That page already has a landing assigned. Replace its file or delete it first.', 'static2wp' );
 			return $outcome;
 		}
 
 		if ( '' === self::base_dir() ) {
-			$outcome['error'] = __( 'The uploads directory is not writable.', 'html-landing-pages' );
+			$outcome['error'] = __( 'The uploads directory is not writable.', 'static2wp' );
 			return $outcome;
 		}
 
@@ -633,23 +633,23 @@ class HLP_Store {
 			switch ( $code ) {
 				case UPLOAD_ERR_INI_SIZE:
 				case UPLOAD_ERR_FORM_SIZE:
-					return __( 'The file is too large for this server.', 'html-landing-pages' );
+					return __( 'The file is too large for this server.', 'static2wp' );
 				case UPLOAD_ERR_PARTIAL:
-					return __( 'The upload was incomplete — please try again.', 'html-landing-pages' );
+					return __( 'The upload was incomplete — please try again.', 'static2wp' );
 				case UPLOAD_ERR_NO_FILE:
-					return __( 'No file was uploaded.', 'html-landing-pages' );
+					return __( 'No file was uploaded.', 'static2wp' );
 				default:
-					return __( 'Upload failed. Please try again.', 'html-landing-pages' );
+					return __( 'Upload failed. Please try again.', 'static2wp' );
 			}
 		}
 
 		if ( $_FILES[ $file_key ]['size'] > self::MAX_UPLOAD ) {
-			return __( 'File is larger than 100 MB.', 'html-landing-pages' );
+			return __( 'File is larger than 100 MB.', 'static2wp' );
 		}
 
 		$ext = strtolower( pathinfo( $_FILES[ $file_key ]['name'], PATHINFO_EXTENSION ) );
 		if ( ! in_array( $ext, array( 'html', 'htm', 'zip' ), true ) ) {
-			return __( 'Only .html and .zip files are supported.', 'html-landing-pages' );
+			return __( 'Only .html and .zip files are supported.', 'static2wp' );
 		}
 
 		$check = wp_check_filetype_and_ext(
@@ -662,11 +662,11 @@ class HLP_Store {
 			)
 		);
 		if ( empty( $check['ext'] ) || ! in_array( $check['ext'], array( 'html', 'htm', 'zip' ), true ) ) {
-			return __( 'That file does not look like a real .html or .zip file.', 'html-landing-pages' );
+			return __( 'That file does not look like a real .html or .zip file.', 'static2wp' );
 		}
 
 		if ( in_array( $ext, array( 'html', 'htm' ), true ) && (int) $_FILES[ $file_key ]['size'] > self::MAX_HTML ) {
-			return __( 'The HTML file is larger than 2 MB.', 'html-landing-pages' );
+			return __( 'The HTML file is larger than 2 MB.', 'static2wp' );
 		}
 
 		return '';

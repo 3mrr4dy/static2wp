@@ -2,7 +2,7 @@
 /**
  * Admin layer: menu page, uploads, AJAX endpoints, landing management.
  *
- * @package HTML_Landing_Pages
+ * @package Static2WP
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -10,26 +10,26 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class HLP_Admin
+ * Class S2WP_Admin
  */
-class HLP_Admin {
+class S2WP_Admin {
 
 	/**
 	 * Singleton instance.
 	 *
-	 * @var HLP_Admin|null
+	 * @var S2WP_Admin|null
 	 */
 	private static $instance = null;
 
 	/**
 	 * Admin page slug.
 	 */
-	const MENU_SLUG = 'html-landing-pages';
+	const MENU_SLUG = 'static2wp';
 
 	/**
 	 * Get instance.
 	 *
-	 * @return HLP_Admin
+	 * @return S2WP_Admin
 	 */
 	public static function instance() {
 		if ( null === self::$instance ) {
@@ -44,14 +44,14 @@ class HLP_Admin {
 	private function __construct() {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
-		add_action( 'wp_ajax_hlp_save', array( $this, 'ajax_save' ) );
-		add_action( 'wp_ajax_hlp_toggle', array( $this, 'ajax_toggle' ) );
-		add_action( 'wp_ajax_hlp_new_version', array( $this, 'ajax_new_version' ) );
-		add_action( 'wp_ajax_hlp_rollback', array( $this, 'ajax_rollback' ) );
-		add_action( 'wp_ajax_hlp_delete_version', array( $this, 'ajax_delete_version' ) );
-		add_action( 'wp_ajax_hlp_delete', array( $this, 'ajax_delete' ) );
-		add_action( 'admin_post_hlp_save', array( $this, 'post_save' ) );
-		add_action( 'admin_post_hlp_settings', array( $this, 'post_settings' ) );
+		add_action( 'wp_ajax_s2wp_save', array( $this, 'ajax_save' ) );
+		add_action( 'wp_ajax_s2wp_toggle', array( $this, 'ajax_toggle' ) );
+		add_action( 'wp_ajax_s2wp_new_version', array( $this, 'ajax_new_version' ) );
+		add_action( 'wp_ajax_s2wp_rollback', array( $this, 'ajax_rollback' ) );
+		add_action( 'wp_ajax_s2wp_delete_version', array( $this, 'ajax_delete_version' ) );
+		add_action( 'wp_ajax_s2wp_delete', array( $this, 'ajax_delete' ) );
+		add_action( 'admin_post_s2wp_save', array( $this, 'post_save' ) );
+		add_action( 'admin_post_s2wp_settings', array( $this, 'post_settings' ) );
 	}
 
 	/**
@@ -59,8 +59,8 @@ class HLP_Admin {
 	 */
 	public function register_menu() {
 		add_pages_page(
-			__( 'Page files', 'html-landing-pages' ),
-			__( 'Page file', 'html-landing-pages' ),
+			__( 'Page files', 'static2wp' ),
+			__( 'Page file', 'static2wp' ),
 			'edit_pages',
 			self::MENU_SLUG,
 			array( $this, 'render_page' )
@@ -76,33 +76,33 @@ class HLP_Admin {
 		if ( 'pages_page_' . self::MENU_SLUG !== $hook ) {
 			return;
 		}
-		wp_enqueue_style( 'hlp-admin', HLP_PLUGIN_URL . 'assets/admin.css', array(), HLP_VERSION );
-		wp_enqueue_script( 'hlp-admin', HLP_PLUGIN_URL . 'assets/admin.js', array( 'jquery' ), HLP_VERSION, true );
+		wp_enqueue_style( 's2wp-admin', S2WP_PLUGIN_URL . 'assets/admin.css', array(), S2WP_VERSION );
+		wp_enqueue_script( 's2wp-admin', S2WP_PLUGIN_URL . 'assets/admin.js', array( 'jquery' ), S2WP_VERSION, true );
 		wp_localize_script(
-			'hlp-admin',
-			'HLP',
+			's2wp-admin',
+			'S2WP',
 			array(
 				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-				'nonce'   => wp_create_nonce( 'hlp_save' ),
-				'maxSize' => HLP_Store::MAX_UPLOAD,
+				'nonce'   => wp_create_nonce( 's2wp_save' ),
+				'maxSize' => S2WP_Store::MAX_UPLOAD,
 				'strings' => array(
-					'noFile'         => __( 'Choose a file first.', 'html-landing-pages' ),
-					'badType'        => __( 'Only HTML or ZIP files are allowed.', 'html-landing-pages' ),
-					'tooBig'         => __( 'File is larger than 100 MB.', 'html-landing-pages' ),
-					'uploading'      => __( 'Uploading…', 'html-landing-pages' ),
-					'error'          => __( 'Something went wrong. Try again.', 'html-landing-pages' ),
-					'confirmVersion' => __( 'Delete this older file?', 'html-landing-pages' ),
-					'confirmDelete'  => __( 'Remove the file from this page? The page itself stays.', 'html-landing-pages' ),
-					'showEditor'     => __( 'Edit page text', 'html-landing-pages' ),
-					'hideEditor'     => __( 'Hide page text', 'html-landing-pages' ),
-					'activeBadge'    => __( 'Active', 'html-landing-pages' ),
-					'viewPage'       => __( 'View page', 'html-landing-pages' ),
-					'reloadNote'     => __( 'Reload this page to manage your landings.', 'html-landing-pages' ),
-					'dismissNotice'  => __( 'Dismiss this notice.', 'html-landing-pages' ),
+					'noFile'         => __( 'Choose a file first.', 'static2wp' ),
+					'badType'        => __( 'Only HTML or ZIP files are allowed.', 'static2wp' ),
+					'tooBig'         => __( 'File is larger than 100 MB.', 'static2wp' ),
+					'uploading'      => __( 'Uploading…', 'static2wp' ),
+					'error'          => __( 'Something went wrong. Try again.', 'static2wp' ),
+					'confirmVersion' => __( 'Delete this older file?', 'static2wp' ),
+					'confirmDelete'  => __( 'Remove the file from this page? The page itself stays.', 'static2wp' ),
+					'showEditor'     => __( 'Edit page text', 'static2wp' ),
+					'hideEditor'     => __( 'Hide page text', 'static2wp' ),
+					'activeBadge'    => __( 'Active', 'static2wp' ),
+					'viewPage'       => __( 'View page', 'static2wp' ),
+					'reloadNote'     => __( 'Reload this page to manage your landings.', 'static2wp' ),
+					'dismissNotice'  => __( 'Dismiss this notice.', 'static2wp' ),
 				),
 			)
 		);
-		wp_set_script_translations( 'hlp-admin', 'html-landing-pages' );
+		wp_set_script_translations( 's2wp-admin', 'static2wp' );
 	}
 
 	/* ---------------------------------------------------------------------
@@ -114,15 +114,15 @@ class HLP_Admin {
 	 */
 	public function render_page() {
 		if ( ! current_user_can( 'edit_pages' ) ) {
-			wp_die( esc_html__( 'You do not have permission to access this page.', 'html-landing-pages' ) );
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'static2wp' ) );
 		}
 
-		$notice  = isset( $_GET['hlp_notice'] ) ? sanitize_key( wp_unslash( $_GET['hlp_notice'] ) ) : '';
-		$message = isset( $_GET['hlp_message'] ) ? sanitize_text_field( wp_unslash( $_GET['hlp_message'] ) ) : '';
+		$notice  = isset( $_GET['s2wp_notice'] ) ? sanitize_key( wp_unslash( $_GET['s2wp_notice'] ) ) : '';
+		$message = isset( $_GET['s2wp_message'] ) ? sanitize_text_field( wp_unslash( $_GET['s2wp_message'] ) ) : '';
 		?>
-		<div class="wrap hlp-wrap">
-			<h1><?php esc_html_e( 'Page file', 'html-landing-pages' ); ?></h1>
-			<p class="hlp-subtitle"><?php esc_html_e( 'Upload a file. We create a page for it. Visitors see the file — not the theme, not a builder.', 'html-landing-pages' ); ?></p>
+		<div class="wrap s2wp-wrap">
+			<h1><?php esc_html_e( 'Page file', 'static2wp' ); ?></h1>
+			<p class="s2wp-subtitle"><?php esc_html_e( 'Upload a file. We create a page for it. Visitors see the file — not the theme, not a builder.', 'static2wp' ); ?></p>
 
 			<?php if ( $notice ) : ?>
 				<div class="notice notice-<?php echo 'success' === $notice ? 'success' : 'error'; ?> is-dismissible">
@@ -130,34 +130,34 @@ class HLP_Admin {
 				</div>
 			<?php endif; ?>
 
-			<div class="hlp-card">
-				<form id="hlp-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" enctype="multipart/form-data">
-					<input type="hidden" name="action" value="hlp_save">
-					<?php wp_nonce_field( 'hlp_save', 'hlp_nonce' ); ?>
+			<div class="s2wp-card">
+				<form id="s2wp-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" enctype="multipart/form-data">
+					<input type="hidden" name="action" value="s2wp_save">
+					<?php wp_nonce_field( 's2wp_save', 's2wp_nonce' ); ?>
 
-					<div id="hlp-dropzone" class="hlp-dropzone" tabindex="0" role="button" aria-label="<?php esc_attr_e( 'Drop a file here', 'html-landing-pages' ); ?>">
-						<strong><?php esc_html_e( 'Drop a file here', 'html-landing-pages' ); ?></strong>
-						<span><?php esc_html_e( 'or click to choose — HTML or ZIP', 'html-landing-pages' ); ?></span>
-						<span id="hlp-filename" class="hlp-filename"></span>
+					<div id="s2wp-dropzone" class="s2wp-dropzone" tabindex="0" role="button" aria-label="<?php esc_attr_e( 'Drop a file here', 'static2wp' ); ?>">
+						<strong><?php esc_html_e( 'Drop a file here', 'static2wp' ); ?></strong>
+						<span><?php esc_html_e( 'or click to choose — HTML or ZIP', 'static2wp' ); ?></span>
+						<span id="s2wp-filename" class="s2wp-filename"></span>
 					</div>
-					<input type="file" id="hlp-file" name="landing_file" accept=".html,.htm,.zip" hidden>
+					<input type="file" id="s2wp-file" name="landing_file" accept=".html,.htm,.zip" hidden>
 
-					<div class="hlp-fields">
+					<div class="s2wp-fields">
 						<label>
-							<?php esc_html_e( 'Page name', 'html-landing-pages' ); ?>
-							<input type="text" name="landing_name" id="hlp-name" placeholder="<?php esc_attr_e( 'Summer offer', 'html-landing-pages' ); ?>">
+							<?php esc_html_e( 'Page name', 'static2wp' ); ?>
+							<input type="text" name="landing_name" id="s2wp-name" placeholder="<?php esc_attr_e( 'Summer offer', 'static2wp' ); ?>">
 						</label>
 						<label>
-							<?php esc_html_e( 'Or attach to an existing page', 'html-landing-pages' ); ?>
+							<?php esc_html_e( 'Or attach to an existing page', 'static2wp' ); ?>
 							<?php $this->pages_dropdown(); ?>
 						</label>
 					</div>
 
-					<button type="submit" id="hlp-submit" class="button button-primary" disabled>
-						<?php esc_html_e( 'Publish page', 'html-landing-pages' ); ?>
+					<button type="submit" id="s2wp-submit" class="button button-primary" disabled>
+						<?php esc_html_e( 'Publish page', 'static2wp' ); ?>
 					</button>
-					<div id="hlp-log" class="hlp-log" hidden></div>
-					<div id="hlp-result" class="hlp-result" hidden></div>
+					<div id="s2wp-log" class="s2wp-log" hidden></div>
+					<div id="s2wp-result" class="s2wp-result" hidden></div>
 				</form>
 			</div>
 
@@ -173,7 +173,7 @@ class HLP_Admin {
 	 */
 	private function pages_dropdown() {
 		$used = array();
-		foreach ( HLP_Store::get_all() as $record ) {
+		foreach ( S2WP_Store::get_all() as $record ) {
 			if ( ! empty( $record['page_id'] ) ) {
 				$used[] = (int) $record['page_id'];
 			}
@@ -188,14 +188,14 @@ class HLP_Admin {
 			)
 		);
 		?>
-		<select name="page_id" id="hlp-page">
-			<option value="0"><?php esc_html_e( 'New page', 'html-landing-pages' ); ?></option>
+		<select name="page_id" id="s2wp-page">
+			<option value="0"><?php esc_html_e( 'New page', 'static2wp' ); ?></option>
 			<?php foreach ( (array) $pages as $p ) : ?>
 				<?php
 				if ( in_array( (int) $p->ID, $used, true ) ) {
 					continue;
 				}
-				$label = '' !== trim( $p->post_title ) ? $p->post_title : __( '(no title)', 'html-landing-pages' );
+				$label = '' !== trim( $p->post_title ) ? $p->post_title : __( '(no title)', 'static2wp' );
 				?>
 				<option value="<?php echo esc_attr( $p->ID ); ?>"><?php echo esc_html( $label ); ?></option>
 			<?php endforeach; ?>
@@ -207,30 +207,30 @@ class HLP_Admin {
 	 * Render the table of existing landings.
 	 */
 	private function render_landings_table() {
-		$all = HLP_Store::get_all();
+		$all = S2WP_Store::get_all();
 		?>
-		<div class="hlp-card">
-			<div class="hlp-table-head">
-				<h2><?php esc_html_e( 'Pages with a file', 'html-landing-pages' ); ?></h2>
+		<div class="s2wp-card">
+			<div class="s2wp-table-head">
+				<h2><?php esc_html_e( 'Pages with a file', 'static2wp' ); ?></h2>
 				<?php if ( ! empty( $all ) ) : ?>
-					<input type="search" id="hlp-search" class="hlp-search" placeholder="<?php esc_attr_e( 'Search…', 'html-landing-pages' ); ?>">
+					<input type="search" id="s2wp-search" class="s2wp-search" placeholder="<?php esc_attr_e( 'Search…', 'static2wp' ); ?>">
 				<?php endif; ?>
 			</div>
 
 			<?php if ( empty( $all ) ) : ?>
-				<div class="hlp-empty">
+				<div class="s2wp-empty">
 					<span class="dashicons dashicons-welcome-widgets-menus"></span>
-					<strong><?php esc_html_e( 'No pages yet', 'html-landing-pages' ); ?></strong>
-					<p><?php esc_html_e( 'Upload a file above, or open any page and upload it there.', 'html-landing-pages' ); ?></p>
+					<strong><?php esc_html_e( 'No pages yet', 'static2wp' ); ?></strong>
+					<p><?php esc_html_e( 'Upload a file above, or open any page and upload it there.', 'static2wp' ); ?></p>
 				</div>
 			<?php else : ?>
-			<table class="widefat striped hlp-table">
+			<table class="widefat striped s2wp-table">
 				<thead>
 					<tr>
-						<th><?php esc_html_e( 'Name', 'html-landing-pages' ); ?></th>
-						<th><?php esc_html_e( 'Page', 'html-landing-pages' ); ?></th>
-						<th><?php esc_html_e( 'Visitors see', 'html-landing-pages' ); ?></th>
-						<th><?php esc_html_e( 'Actions', 'html-landing-pages' ); ?></th>
+						<th><?php esc_html_e( 'Name', 'static2wp' ); ?></th>
+						<th><?php esc_html_e( 'Page', 'static2wp' ); ?></th>
+						<th><?php esc_html_e( 'Visitors see', 'static2wp' ); ?></th>
+						<th><?php esc_html_e( 'Actions', 'static2wp' ); ?></th>
 					</tr>
 				</thead>
 				<tbody>
@@ -247,31 +247,31 @@ class HLP_Admin {
 							<?php if ( $page ) : ?>
 								<a href="<?php echo esc_url( $view_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $page->post_title ); ?></a>
 							<?php else : ?>
-								<span><?php esc_html_e( 'Page deleted', 'html-landing-pages' ); ?></span>
+								<span><?php esc_html_e( 'Page deleted', 'static2wp' ); ?></span>
 							<?php endif; ?>
 						</td>
 						<td>
-							<?php echo $is_active ? esc_html__( 'The file', 'html-landing-pages' ) : esc_html__( 'Normal page', 'html-landing-pages' ); ?>
+							<?php echo $is_active ? esc_html__( 'The file', 'static2wp' ) : esc_html__( 'Normal page', 'static2wp' ); ?>
 						</td>
-						<td class="hlp-actions">
+						<td class="s2wp-actions">
 							<?php if ( $page ) : ?>
-								<a class="button button-small" href="<?php echo esc_url( $view_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View', 'html-landing-pages' ); ?></a>
+								<a class="button button-small" href="<?php echo esc_url( $view_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View', 'static2wp' ); ?></a>
 							<?php endif; ?>
 							<?php if ( $edit_url ) : ?>
-								<a class="button button-small" href="<?php echo esc_url( $edit_url ); ?>"><?php esc_html_e( 'Edit', 'html-landing-pages' ); ?></a>
+								<a class="button button-small" href="<?php echo esc_url( $edit_url ); ?>"><?php esc_html_e( 'Edit', 'static2wp' ); ?></a>
 							<?php endif; ?>
-							<button class="button button-small hlp-toggle" data-id="<?php echo esc_attr( $id ); ?>" data-nonce="<?php echo esc_attr( wp_create_nonce( 'hlp_toggle_' . $id ) ); ?>">
-								<?php echo $is_active ? esc_html__( 'Use normal page', 'html-landing-pages' ) : esc_html__( 'Show file', 'html-landing-pages' ); ?>
+							<button class="button button-small s2wp-toggle" data-id="<?php echo esc_attr( $id ); ?>" data-nonce="<?php echo esc_attr( wp_create_nonce( 's2wp_toggle_' . $id ) ); ?>">
+								<?php echo $is_active ? esc_html__( 'Use normal page', 'static2wp' ) : esc_html__( 'Show file', 'static2wp' ); ?>
 							</button>
-							<button class="button button-small hlp-delete" data-id="<?php echo esc_attr( $id ); ?>" data-nonce="<?php echo esc_attr( wp_create_nonce( 'hlp_delete_' . $id ) ); ?>">
-								<?php esc_html_e( 'Remove file', 'html-landing-pages' ); ?>
+							<button class="button button-small s2wp-delete" data-id="<?php echo esc_attr( $id ); ?>" data-nonce="<?php echo esc_attr( wp_create_nonce( 's2wp_delete_' . $id ) ); ?>">
+								<?php esc_html_e( 'Remove file', 'static2wp' ); ?>
 							</button>
 						</td>
 					</tr>
 				<?php endforeach; ?>
 				</tbody>
 			</table>
-			<p class="hlp-no-results" hidden><?php esc_html_e( 'Nothing matches.', 'html-landing-pages' ); ?></p>
+			<p class="s2wp-no-results" hidden><?php esc_html_e( 'Nothing matches.', 'static2wp' ); ?></p>
 			<?php endif; ?>
 		</div>
 		<?php
@@ -281,35 +281,35 @@ class HLP_Admin {
 	 * Render the global settings card (tracking codes + SEO injection).
 	 */
 	private function render_settings_card() {
-		$settings = HLP_Store::settings();
+		$settings = S2WP_Store::settings();
 		?>
-		<div class="hlp-card">
-			<h2><?php esc_html_e( 'Tracking codes', 'html-landing-pages' ); ?></h2>
+		<div class="s2wp-card">
+			<h2><?php esc_html_e( 'Tracking codes', 'static2wp' ); ?></h2>
 
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-				<input type="hidden" name="action" value="hlp_settings">
-				<?php wp_nonce_field( 'hlp_settings', 'hlp_settings_nonce' ); ?>
+				<input type="hidden" name="action" value="s2wp_settings">
+				<?php wp_nonce_field( 's2wp_settings', 's2wp_settings_nonce' ); ?>
 
-				<div class="hlp-settings-grid">
+				<div class="s2wp-settings-grid">
 					<label>
-						<strong><?php esc_html_e( 'Head code', 'html-landing-pages' ); ?></strong>
-						<span class="hlp-field-note"><?php esc_html_e( 'Analytics or pixels — added to the top of the page.', 'html-landing-pages' ); ?></span>
-						<textarea name="head_code" class="hlp-code" rows="5" spellcheck="false" placeholder="<!-- GTM / analytics / pixel code -->"><?php echo esc_textarea( $settings['head_code'] ); ?></textarea>
+						<strong><?php esc_html_e( 'Head code', 'static2wp' ); ?></strong>
+						<span class="s2wp-field-note"><?php esc_html_e( 'Analytics or pixels — added to the top of the page.', 'static2wp' ); ?></span>
+						<textarea name="head_code" class="s2wp-code" rows="5" spellcheck="false" placeholder="<!-- GTM / analytics / pixel code -->"><?php echo esc_textarea( $settings['head_code'] ); ?></textarea>
 					</label>
 					<label>
-						<strong><?php esc_html_e( 'Body code', 'html-landing-pages' ); ?></strong>
-						<span class="hlp-field-note"><?php esc_html_e( 'Added as soon as the page opens.', 'html-landing-pages' ); ?></span>
-						<textarea name="body_code" class="hlp-code" rows="5" spellcheck="false" placeholder="<!-- GTM <noscript> -->"><?php echo esc_textarea( $settings['body_code'] ); ?></textarea>
+						<strong><?php esc_html_e( 'Body code', 'static2wp' ); ?></strong>
+						<span class="s2wp-field-note"><?php esc_html_e( 'Added as soon as the page opens.', 'static2wp' ); ?></span>
+						<textarea name="body_code" class="s2wp-code" rows="5" spellcheck="false" placeholder="<!-- GTM <noscript> -->"><?php echo esc_textarea( $settings['body_code'] ); ?></textarea>
 					</label>
 				</div>
 
-				<div class="hlp-options">
-					<label><input type="checkbox" name="inject_all" value="1" <?php checked( $settings['inject_all'] ); ?>> <?php esc_html_e( 'Also add these codes on the rest of the site', 'html-landing-pages' ); ?></label>
-					<label><input type="checkbox" name="seo_meta" value="1" <?php checked( $settings['seo_meta'] ); ?>> <?php esc_html_e( 'Use the page title and description in Google', 'html-landing-pages' ); ?></label>
+				<div class="s2wp-options">
+					<label><input type="checkbox" name="inject_all" value="1" <?php checked( $settings['inject_all'] ); ?>> <?php esc_html_e( 'Also add these codes on the rest of the site', 'static2wp' ); ?></label>
+					<label><input type="checkbox" name="seo_meta" value="1" <?php checked( $settings['seo_meta'] ); ?>> <?php esc_html_e( 'Use the page title and description in Google', 'static2wp' ); ?></label>
 				</div>
 
 				<button type="submit" class="button button-primary">
-					<?php esc_html_e( 'Save', 'html-landing-pages' ); ?>
+					<?php esc_html_e( 'Save', 'static2wp' ); ?>
 				</button>
 			</form>
 		</div>
@@ -327,14 +327,14 @@ class HLP_Admin {
 	 * require unfiltered_html — without it the existing codes are kept.
 	 */
 	public function post_settings() {
-		if ( ! isset( $_POST['hlp_settings_nonce'] ) || ! wp_verify_nonce( sanitize_key( wp_unslash( $_POST['hlp_settings_nonce'] ) ), 'hlp_settings' ) ) {
-			wp_die( esc_html__( 'Security check failed.', 'html-landing-pages' ) );
+		if ( ! isset( $_POST['s2wp_settings_nonce'] ) || ! wp_verify_nonce( sanitize_key( wp_unslash( $_POST['s2wp_settings_nonce'] ) ), 's2wp_settings' ) ) {
+			wp_die( esc_html__( 'Security check failed.', 'static2wp' ) );
 		}
 		if ( ! current_user_can( 'edit_pages' ) ) {
-			wp_die( esc_html__( 'Permission denied.', 'html-landing-pages' ) );
+			wp_die( esc_html__( 'Permission denied.', 'static2wp' ) );
 		}
 
-		$existing = HLP_Store::settings();
+		$existing = S2WP_Store::settings();
 
 		if ( current_user_can( 'unfiltered_html' ) ) {
 			$head_code = isset( $_POST['head_code'] ) ? trim( (string) wp_unslash( $_POST['head_code'] ) ) : '';
@@ -344,7 +344,7 @@ class HLP_Admin {
 			$body_code = $existing['body_code'];
 		}
 
-		HLP_Store::save_settings(
+		S2WP_Store::save_settings(
 			array(
 				'head_code'  => $head_code,
 				'body_code'  => $body_code,
@@ -357,8 +357,8 @@ class HLP_Admin {
 			add_query_arg(
 				array(
 					'page'        => self::MENU_SLUG,
-					'hlp_notice'  => 'success',
-					'hlp_message' => __( 'Settings saved.', 'html-landing-pages' ),
+					's2wp_notice'  => 'success',
+					's2wp_message' => __( 'Settings saved.', 'static2wp' ),
 				),
 				admin_url( 'edit.php?post_type=page' )
 			)
@@ -377,10 +377,10 @@ class HLP_Admin {
 	 * the same capability WordPress uses for raw post content.
 	 */
 	public function ajax_save() {
-		check_ajax_referer( 'hlp_save', 'nonce' );
+		check_ajax_referer( 's2wp_save', 'nonce' );
 
 		if ( ! current_user_can( 'edit_pages' ) || ! current_user_can( 'unfiltered_html' ) ) {
-			wp_send_json_error( array( 'message' => __( 'Permission denied. Publishing a raw HTML page requires the "unfiltered_html" capability.', 'html-landing-pages' ) ), 403 );
+			wp_send_json_error( array( 'message' => __( 'Permission denied. Publishing a raw HTML page requires the "unfiltered_html" capability.', 'static2wp' ) ), 403 );
 		}
 
 		$outcome = $this->handle_save( $_POST, 'landing_file' );
@@ -395,21 +395,21 @@ class HLP_Admin {
 	 * No-JS fallback: classic form POST.
 	 */
 	public function post_save() {
-		if ( ! isset( $_POST['hlp_nonce'] ) || ! wp_verify_nonce( sanitize_key( wp_unslash( $_POST['hlp_nonce'] ) ), 'hlp_save' ) ) {
-			wp_die( esc_html__( 'Security check failed.', 'html-landing-pages' ) );
+		if ( ! isset( $_POST['s2wp_nonce'] ) || ! wp_verify_nonce( sanitize_key( wp_unslash( $_POST['s2wp_nonce'] ) ), 's2wp_save' ) ) {
+			wp_die( esc_html__( 'Security check failed.', 'static2wp' ) );
 		}
 		if ( ! current_user_can( 'edit_pages' ) || ! current_user_can( 'unfiltered_html' ) ) {
-			wp_die( esc_html__( 'Permission denied. Publishing a raw HTML page requires the "unfiltered_html" capability.', 'html-landing-pages' ) );
+			wp_die( esc_html__( 'Permission denied. Publishing a raw HTML page requires the "unfiltered_html" capability.', 'static2wp' ) );
 		}
 
 		$outcome = $this->handle_save( $_POST, 'landing_file' );
 
 		$args = array(
 			'page'        => self::MENU_SLUG,
-			'hlp_notice'  => $outcome['success'] ? 'success' : 'error',
-			'hlp_message' => $outcome['success']
+			's2wp_notice'  => $outcome['success'] ? 'success' : 'error',
+			's2wp_message' => $outcome['success']
 				/* translators: %s: landing name */
-				? sprintf( __( '"%s" is now live.', 'html-landing-pages' ), $outcome['name'] )
+				? sprintf( __( '"%s" is now live.', 'static2wp' ), $outcome['name'] )
 				: $outcome['error'],
 		);
 		wp_safe_redirect( add_query_arg( $args, admin_url( 'edit.php?post_type=page' ) ) );
@@ -420,20 +420,20 @@ class HLP_Admin {
 	 * AJAX: toggle a landing active/inactive.
 	 */
 	public function ajax_toggle() {
-		$id = $this->verify_row_request( 'hlp_toggle_' );
+		$id = $this->verify_row_request( 's2wp_toggle_' );
 		if ( is_wp_error( $id ) ) {
 			wp_send_json_error( array( 'message' => $id->get_error_message() ), 400 );
 		}
 
-		$record            = HLP_Store::get( $id );
+		$record            = S2WP_Store::get( $id );
 		$record['active']  = empty( $record['active'] );
-		HLP_Store::save( $id, $record );
+		S2WP_Store::save( $id, $record );
 
 		$response = array(
 			'active'  => $record['active'],
 			'message' => $record['active']
-				? __( 'Visitors will see the file.', 'html-landing-pages' )
-				: __( 'Visitors will see the normal page.', 'html-landing-pages' ),
+				? __( 'Visitors will see the file.', 'static2wp' )
+				: __( 'Visitors will see the normal page.', 'static2wp' ),
 		);
 		$response = $this->with_editor_html( $response, $record );
 		wp_send_json_success( $response );
@@ -445,13 +445,13 @@ class HLP_Admin {
 	 * Raw HTML becomes a public document → unfiltered_html required.
 	 */
 	public function ajax_new_version() {
-		$id = $this->verify_row_request( 'hlp_version_' );
+		$id = $this->verify_row_request( 's2wp_version_' );
 		if ( is_wp_error( $id ) ) {
 			wp_send_json_error( array( 'message' => $id->get_error_message() ), 400 );
 		}
 
 		if ( ! current_user_can( 'unfiltered_html' ) ) {
-			wp_send_json_error( array( 'message' => __( 'Permission denied. Publishing a raw HTML page requires the "unfiltered_html" capability.', 'html-landing-pages' ) ), 403 );
+			wp_send_json_error( array( 'message' => __( 'Permission denied. Publishing a raw HTML page requires the "unfiltered_html" capability.', 'static2wp' ) ), 403 );
 		}
 
 		$outcome = array(
@@ -460,14 +460,14 @@ class HLP_Admin {
 			'error'   => '',
 		);
 
-		$file_error = HLP_Store::validate_upload( 'landing_file' );
+		$file_error = S2WP_Store::validate_upload( 'landing_file' );
 		if ( $file_error ) {
 			$outcome['error'] = $file_error;
 			wp_send_json_error( $outcome );
 		}
 
-		$record   = HLP_Store::get( $id );
-		$versions = HLP_Store::normalize_versions( $record );
+		$record   = S2WP_Store::get( $id );
+		$versions = S2WP_Store::normalize_versions( $record );
 
 		$v   = 1;
 		$now = current_time( 'mysql' );
@@ -475,11 +475,11 @@ class HLP_Admin {
 			$v = max( $v, (int) $version['v'] + 1 );
 		}
 
-		$dir = trailingslashit( HLP_Store::landing_dir( $id ) ) . 'v-' . $v;
+		$dir = trailingslashit( S2WP_Store::landing_dir( $id ) ) . 'v-' . $v;
 		try {
-			$stored = HLP_Store::store_upload( $dir, $_FILES['landing_file'] );
+			$stored = S2WP_Store::store_upload( $dir, $_FILES['landing_file'] );
 		} catch ( Exception $e ) {
-			HLP_Store::remove_dir( $dir );
+			S2WP_Store::remove_dir( $dir );
 			$outcome['log']   = array( $e->getMessage() );
 			$outcome['error'] = $e->getMessage();
 			wp_send_json_error( $outcome );
@@ -498,13 +498,13 @@ class HLP_Admin {
 		$record['entry']           = $stored['entry'];
 		$record['type']            = $stored['type'];
 		$record['updated']         = $now;
-		HLP_Store::save( $id, $record );
+		S2WP_Store::save( $id, $record );
 
 		/* translators: %d: version number */
 		$outcome['success'] = true;
 		$outcome['log']     = $stored['log'];
 		$outcome['type']    = $stored['type'];
-		$outcome['message'] = __( 'The new file is now live.', 'html-landing-pages' );
+		$outcome['message'] = __( 'The new file is now live.', 'static2wp' );
 		$outcome            = $this->with_editor_html( $outcome, $record );
 		wp_send_json_success( $outcome );
 	}
@@ -514,14 +514,14 @@ class HLP_Admin {
 	 */
 	public function ajax_rollback() {
 		$outcome = $this->handle_version_action(
-			'hlp_version_',
+			's2wp_version_',
 			function ( &$record, $version, $v ) {
 				$record['current_version'] = $v;
 				$record['entry']           = $version['entry'];
 				$record['type']            = $version['type'];
 				$record['updated']         = current_time( 'mysql' );
 				/* translators: %d: version number */
-				return sprintf( __( 'Rolled back to version %d — it is now live.', 'html-landing-pages' ), $v );
+				return sprintf( __( 'Rolled back to version %d — it is now live.', 'static2wp' ), $v );
 			}
 		);
 		wp_send_json_success( $outcome );
@@ -532,13 +532,13 @@ class HLP_Admin {
 	 */
 	public function ajax_delete_version() {
 		$outcome = $this->handle_version_action(
-			'hlp_version_',
+			's2wp_version_',
 			function ( &$record, $version, $v ) {
 				if ( 1 === count( $record['versions'] ) ) {
-					return new WP_Error( 'hlp_last', __( 'This is the only version — delete the landing itself instead.', 'html-landing-pages' ) );
+					return new WP_Error( 's2wp_last', __( 'This is the only version — delete the landing itself instead.', 'static2wp' ) );
 				}
 
-				HLP_Store::delete_version_files( $record['id'], $version );
+				S2WP_Store::delete_version_files( $record['id'], $version );
 
 				$remaining = array();
 				foreach ( $record['versions'] as $keep ) {
@@ -566,7 +566,7 @@ class HLP_Admin {
 				}
 				$record['updated'] = current_time( 'mysql' );
 				/* translators: %d: version number */
-				return __( 'Older file deleted.', 'html-landing-pages' );
+				return __( 'Older file deleted.', 'static2wp' );
 			}
 		);
 		wp_send_json_success( $outcome );
@@ -587,10 +587,10 @@ class HLP_Admin {
 		}
 
 		$v      = isset( $_POST['v'] ) ? absint( $_POST['v'] ) : 0;
-		$record = HLP_Store::get( $id );
+		$record = S2WP_Store::get( $id );
 		$record['id'] = $id;
 
-		$record['versions'] = HLP_Store::normalize_versions( $record );
+		$record['versions'] = S2WP_Store::normalize_versions( $record );
 		$version            = null;
 		foreach ( $record['versions'] as $candidate ) {
 			if ( (int) $candidate['v'] === $v ) {
@@ -599,7 +599,7 @@ class HLP_Admin {
 			}
 		}
 		if ( ! $version ) {
-			wp_send_json_error( array( 'message' => __( 'Version not found.', 'html-landing-pages' ) ), 400 );
+			wp_send_json_error( array( 'message' => __( 'Version not found.', 'static2wp' ) ), 400 );
 		}
 
 		$result = $callback( $record, $version, $v );
@@ -607,7 +607,7 @@ class HLP_Admin {
 			wp_send_json_error( array( 'message' => $result->get_error_message() ), 400 );
 		}
 
-		HLP_Store::save( $id, $record );
+		S2WP_Store::save( $id, $record );
 
 		$outcome = array(
 			'success' => true,
@@ -628,7 +628,7 @@ class HLP_Admin {
 		if ( $this->is_editor_request() && ! empty( $record['page_id'] ) ) {
 			$post = get_post( (int) $record['page_id'] );
 			if ( $post ) {
-				$outcome['canvas_html'] = HLP_Metabox::get_canvas_html( $post );
+				$outcome['canvas_html'] = S2WP_Metabox::get_canvas_html( $post );
 			}
 		}
 		return $outcome;
@@ -638,20 +638,20 @@ class HLP_Admin {
 	 * AJAX: delete a landing (files + record). The WordPress page is kept.
 	 */
 	public function ajax_delete() {
-		$id = $this->verify_row_request( 'hlp_delete_' );
+		$id = $this->verify_row_request( 's2wp_delete_' );
 		if ( is_wp_error( $id ) ) {
 			wp_send_json_error( array( 'message' => $id->get_error_message() ), 400 );
 		}
 
-		$record = HLP_Store::get( $id );
+		$record = S2WP_Store::get( $id );
 
-		HLP_Store::delete( $id );
+		S2WP_Store::delete( $id );
 
-		$response = array( 'message' => __( 'File removed from the page.', 'html-landing-pages' ) );
+		$response = array( 'message' => __( 'File removed from the page.', 'static2wp' ) );
 		if ( $this->is_editor_request() && ! empty( $record['page_id'] ) ) {
 			$post = get_post( (int) $record['page_id'] );
 			if ( $post ) {
-				$response['canvas_html'] = HLP_Metabox::get_canvas_html( $post );
+				$response['canvas_html'] = S2WP_Metabox::get_canvas_html( $post );
 			}
 		}
 		wp_send_json_success( $response );
@@ -672,13 +672,13 @@ class HLP_Admin {
 		$name    = isset( $request['landing_name'] ) ? sanitize_text_field( wp_unslash( $request['landing_name'] ) ) : '';
 		$page_id = isset( $request['page_id'] ) ? absint( $request['page_id'] ) : 0;
 
-		$outcome = HLP_Store::create_for_page( $page_id, $name, $file_key );
+		$outcome = S2WP_Store::create_for_page( $page_id, $name, $file_key );
 
 		// create_for_page resolves "new page" itself — use its page, not the request's 0.
 		if ( $outcome['success'] && $this->is_editor_request() && ! empty( $outcome['page_id'] ) ) {
 			$post = get_post( (int) $outcome['page_id'] );
 			if ( $post ) {
-				$outcome['canvas_html'] = HLP_Metabox::get_canvas_html( $post );
+				$outcome['canvas_html'] = S2WP_Metabox::get_canvas_html( $post );
 			}
 		}
 		return $outcome;
@@ -696,28 +696,28 @@ class HLP_Admin {
 	/**
 	 * Verify capability + nonce + landing existence for row-level AJAX actions.
 	 *
-	 * @param string $action_prefix Nonce action prefix (e.g. 'hlp_toggle_').
+	 * @param string $action_prefix Nonce action prefix (e.g. 's2wp_toggle_').
 	 * @return string|WP_Error Landing ID or error.
 	 */
 	private function verify_row_request( $action_prefix ) {
 		if ( ! current_user_can( 'edit_pages' ) ) {
-			return new WP_Error( 'hlp_cap', __( 'Permission denied.', 'html-landing-pages' ) );
+			return new WP_Error( 's2wp_cap', __( 'Permission denied.', 'static2wp' ) );
 		}
 
-		$id = isset( $_POST['id'] ) ? HLP_Store::validate_id( wp_unslash( $_POST['id'] ) ) : '';
+		$id = isset( $_POST['id'] ) ? S2WP_Store::validate_id( wp_unslash( $_POST['id'] ) ) : '';
 		if ( '' === $id || empty( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_key( wp_unslash( $_POST['nonce'] ) ), $action_prefix . $id ) ) {
-			return new WP_Error( 'hlp_nonce', __( 'Security check failed. Please reload the page and try again.', 'html-landing-pages' ) );
+			return new WP_Error( 's2wp_nonce', __( 'Security check failed. Please reload the page and try again.', 'static2wp' ) );
 		}
 
-		$record = HLP_Store::get( $id );
+		$record = S2WP_Store::get( $id );
 		if ( ! $record ) {
-			return new WP_Error( 'hlp_missing', __( 'This landing page no longer exists.', 'html-landing-pages' ) );
+			return new WP_Error( 's2wp_missing', __( 'This landing page no longer exists.', 'static2wp' ) );
 		}
 
 		// Post-level capability: the actor must be allowed to edit the page
 		// this landing owns, not just any page on the site.
 		if ( empty( $record['page_id'] ) || ! current_user_can( 'edit_post', (int) $record['page_id'] ) ) {
-			return new WP_Error( 'hlp_cap', __( 'Permission denied.', 'html-landing-pages' ) );
+			return new WP_Error( 's2wp_cap', __( 'Permission denied.', 'static2wp' ) );
 		}
 
 		return $id;

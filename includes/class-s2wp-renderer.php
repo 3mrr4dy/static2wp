@@ -2,7 +2,7 @@
 /**
  * Frontend layer: serve the assigned landing HTML on its page (full takeover).
  *
- * @package HTML_Landing_Pages
+ * @package Static2WP
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -10,9 +10,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class HLP_Renderer
+ * Class S2WP_Renderer
  */
-class HLP_Renderer {
+class S2WP_Renderer {
 
 	/**
 	 * Hook in.
@@ -29,7 +29,7 @@ class HLP_Renderer {
 	 * injected into the served HTML instead, since the theme never loads).
 	 */
 	public static function echo_head_code() {
-		$settings = HLP_Store::settings();
+		$settings = S2WP_Store::settings();
 		if ( ! empty( $settings['inject_all'] ) && '' !== trim( $settings['head_code'] ) ) {
 			echo $settings['head_code'] . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- admin-provided tracking code, by design.
 		}
@@ -39,7 +39,7 @@ class HLP_Renderer {
 	 * Print the global body code (e.g. GTM <noscript>) on regular pages.
 	 */
 	public static function echo_body_code() {
-		$settings = HLP_Store::settings();
+		$settings = S2WP_Store::settings();
 		if ( ! empty( $settings['inject_all'] ) && '' !== trim( $settings['body_code'] ) ) {
 			echo $settings['body_code'] . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- admin-provided tracking code, by design.
 		}
@@ -62,7 +62,7 @@ class HLP_Renderer {
 			return;
 		}
 
-		$landing = HLP_Store::find_active_by_page( $page_id );
+		$landing = S2WP_Store::find_active_by_page( $page_id );
 		if ( ! $landing ) {
 			return;
 		}
@@ -73,7 +73,7 @@ class HLP_Renderer {
 			return;
 		}
 
-		$entry_path = HLP_Store::current_entry_path( $landing );
+		$entry_path = S2WP_Store::current_entry_path( $landing );
 		if ( '' === $entry_path || ! is_file( $entry_path ) ) {
 			return; // Files were removed externally — fall back to the normal page.
 		}
@@ -83,8 +83,8 @@ class HLP_Renderer {
 			return;
 		}
 
-		$base_url = trailingslashit( HLP_Store::current_base_url( $landing ) );
-		$entry    = HLP_Store::current_entry( $landing );
+		$base_url = trailingslashit( S2WP_Store::current_base_url( $landing ) );
+		$entry    = S2WP_Store::current_entry( $landing );
 		$base_rel = trailingslashit( dirname( $entry ) );
 		$base_rel = ( './' === $base_rel ) ? '' : $base_rel;
 
@@ -114,7 +114,7 @@ class HLP_Renderer {
 		$html   = self::inject_before_head_end( $html, $assets['head'] );
 		$html   = self::inject_before_body_end( $html, $assets['footer'] );
 
-		$settings = HLP_Store::settings();
+		$settings = S2WP_Store::settings();
 		if ( ! empty( $settings['seo_meta'] ) ) {
 			$html = self::inject_seo( $html, $post ); // Fallback only — fills gaps WP didn't provide.
 		}

@@ -1,5 +1,5 @@
 /**
- * HTML Landing Pages — admin UI.
+ * Static2WP — admin UI.
  *
  * Works in two contexts:
  *  - Pages → Page file screen (full form, landings table)
@@ -29,16 +29,16 @@
 		type = type || 'success';
 
 		var $notice = $(
-			'<div class="notice notice-' + type + ' is-dismissible hlp-notice">' +
+			'<div class="notice notice-' + type + ' is-dismissible s2wp-notice">' +
 			'<p></p>' +
 			'<button type="button" class="notice-dismiss"><span class="screen-reader-text"></span></button>' +
 			'</div>'
 		);
 		$notice.find('p').text(message);
-		$notice.find('.screen-reader-text').text(HLP.strings.dismissNotice);
+		$notice.find('.screen-reader-text').text(S2WP.strings.dismissNotice);
 
-		if ($('#hlp-canvas').length) {
-			$('#hlp-canvas').prepend($notice);
+		if ($('#s2wp-canvas').length) {
+			$('#s2wp-canvas').prepend($notice);
 		} else {
 			var $anchor = $('.wp-header-end').first();
 			if (!$anchor.length) {
@@ -101,7 +101,7 @@
 	 * @param {string}      fallback Fallback text.
 	 */
 	function errorNotice(resp, xhr, fallback) {
-		var msg = (resp && resp.data && (resp.data.message || resp.data.error)) || xhrMessage(xhr, fallback || HLP.strings.error);
+		var msg = (resp && resp.data && (resp.data.message || resp.data.error)) || xhrMessage(xhr, fallback || S2WP.strings.error);
 		showNotice(msg, 'error');
 	}
 
@@ -110,16 +110,16 @@
 	 * ------------------------------------------------------------- */
 
 	function initUploadUI() {
-		var $form = $('#hlp-form');
+		var $form = $('#s2wp-form');
 		if (!$form.length) {
 			return;
 		}
 
-		var $dropzone = $('#hlp-dropzone');
-		var $fileInput = $('#hlp-file');
-		var $filename = $('#hlp-filename');
-		var $submit = $('#hlp-submit');
-		var $name = $('#hlp-name');
+		var $dropzone = $('#s2wp-dropzone');
+		var $fileInput = $('#s2wp-file');
+		var $filename = $('#s2wp-filename');
+		var $submit = $('#s2wp-submit');
+		var $name = $('#s2wp-name');
 
 		$dropzone.on('click keydown', function (e) {
 			if (e.type === 'click' || e.which === 13 || e.which === 32) {
@@ -138,7 +138,7 @@
 			$dropzone.on(evt, function (e) {
 				e.preventDefault();
 				e.stopPropagation();
-				$dropzone.addClass('hlp-dragover');
+				$dropzone.addClass('s2wp-dragover');
 			});
 		});
 
@@ -146,7 +146,7 @@
 			$dropzone.on(evt, function (e) {
 				e.preventDefault();
 				e.stopPropagation();
-				$dropzone.removeClass('hlp-dragover');
+				$dropzone.removeClass('s2wp-dragover');
 			});
 		});
 
@@ -167,18 +167,18 @@
 			clearLog();
 
 			if (!/\.(html?|zip)$/i.test(file.name)) {
-				logLine(HLP.strings.badType, 'error');
+				logLine(S2WP.strings.badType, 'error');
 				$submit.prop('disabled', true);
 				return;
 			}
-			if (file.size > HLP.maxSize) {
-				logLine(HLP.strings.tooBig, 'error');
+			if (file.size > S2WP.maxSize) {
+				logLine(S2WP.strings.tooBig, 'error');
 				$submit.prop('disabled', true);
 				return;
 			}
 
 			$filename.text(file.name + ' (' + formatSize(file.size) + ')');
-			$dropzone.addClass('hlp-has-file');
+			$dropzone.addClass('s2wp-has-file');
 			$submit.prop('disabled', false);
 
 			// Pre-fill the landing name from the file name if empty.
@@ -205,22 +205,22 @@
 	 * ------------------------------------------------------------- */
 
 	function doUpload() {
-		var $form = $('#hlp-form');
-		var $fileInput = $('#hlp-file');
-		var $submit = $('#hlp-submit');
-		var $result = $('#hlp-result');
+		var $form = $('#s2wp-form');
+		var $fileInput = $('#s2wp-file');
+		var $submit = $('#s2wp-submit');
+		var $result = $('#s2wp-result');
 
 		if (!$fileInput[0].files.length) {
-			showNotice(HLP.strings.noFile, 'warning');
+			showNotice(S2WP.strings.noFile, 'warning');
 			return;
 		}
-		var pageId = $('#hlp-page').length ? $('#hlp-page').val() : '0';
+		var pageId = $('#s2wp-page').length ? $('#s2wp-page').val() : '0';
 
 		var data = new FormData();
-		data.append('action', 'hlp_save');
-		data.append('nonce', HLP.nonce);
+		data.append('action', 's2wp_save');
+		data.append('nonce', S2WP.nonce);
 		data.append('landing_file', $fileInput[0].files[0]);
-		data.append('landing_name', $('#hlp-name').val() || '');
+		data.append('landing_name', $('#s2wp-name').val() || '');
 		data.append('page_id', pageId || '0');
 		var ctx = editorContext();
 		if (ctx) {
@@ -228,13 +228,13 @@
 		}
 
 		$submit.prop('disabled', true);
-		$form.toggleClass('hlp-busy', true);
+		$form.toggleClass('s2wp-busy', true);
 		clearLog();
-		logLine(HLP.strings.uploading, 'info');
+		logLine(S2WP.strings.uploading, 'info');
 		$result.prop('hidden', true).empty();
 
 		$.ajax({
-			url: HLP.ajaxUrl,
+			url: S2WP.ajaxUrl,
 			type: 'POST',
 			data: data,
 			processData: false,
@@ -256,7 +256,7 @@
 			})
 			.always(function () {
 				$submit.prop('disabled', false);
-				$form.toggleClass('hlp-busy', false);
+				$form.toggleClass('s2wp-busy', false);
 			});
 	}
 
@@ -268,24 +268,24 @@
 	function renderSuccess(data) {
 		var viewUrl = data.view_url ? encodeURI(data.view_url) : '';
 		var html =
-			'<div class="hlp-success">' +
+			'<div class="s2wp-success">' +
 			'<span class="dashicons dashicons-yes-alt"></span>' +
 			'<div>' +
 			'<strong>' + escapeHtml(data.name) + '</strong> ' +
-			'<span class="hlp-badge hlp-badge-active">' + escapeHtml(HLP.strings.activeBadge) + '</span>' +
-			'<div class="hlp-success-actions">' +
-			'<a class="button button-primary" href="' + viewUrl + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(HLP.strings.viewPage) + '</a>' +
+			'<span class="s2wp-badge s2wp-badge-active">' + escapeHtml(S2WP.strings.activeBadge) + '</span>' +
+			'<div class="s2wp-success-actions">' +
+			'<a class="button button-primary" href="' + viewUrl + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(S2WP.strings.viewPage) + '</a>' +
 			'</div>' +
-			'<p class="hlp-success-note">' + escapeHtml(HLP.strings.reloadNote) + '</p>' +
+			'<p class="s2wp-success-note">' + escapeHtml(S2WP.strings.reloadNote) + '</p>' +
 			'</div>' +
 			'</div>';
-		$('#hlp-result').html(html).prop('hidden', false);
+		$('#s2wp-result').html(html).prop('hidden', false);
 	}
 
 	/* ---------------------------------------------------------------
 	 * Editor canvas: occupy the classic / block editor slot.
-	 * Classic: PHP already printed #hlp-canvas after the title.
-	 * Gutenberg: the same markup lives in a hidden #hlp-canvas-root
+	 * Classic: PHP already printed #s2wp-canvas after the title.
+	 * Gutenberg: the same markup lives in a hidden #s2wp-canvas-root
 	 * footer template — a canvas still inside that root is NOT mounted.
 	 * Lift it into the skeleton. No MutationObserver.
 	 * ------------------------------------------------------------- */
@@ -309,11 +309,11 @@
 	}
 
 	function isInsideRoot($el) {
-		return $el.length > 0 && $el.closest('#hlp-canvas-root').length > 0;
+		return $el.length > 0 && $el.closest('#s2wp-canvas-root').length > 0;
 	}
 
 	function canvasNode() {
-		return $('#hlp-canvas').filter(function () {
+		return $('#s2wp-canvas').filter(function () {
 			return !isInsideRoot($(this));
 		});
 	}
@@ -332,22 +332,22 @@
 	}
 
 	function syncEditorToggle() {
-		var $link = $('#hlp-show-editor');
+		var $link = $('#s2wp-show-editor');
 		if (!$link.length) {
 			return;
 		}
-		$link.text($('body').hasClass('hlp-editor-revealed') ? HLP.strings.hideEditor : HLP.strings.showEditor);
+		$link.text($('body').hasClass('s2wp-editor-revealed') ? S2WP.strings.hideEditor : S2WP.strings.showEditor);
 	}
 
 	function markLandingState() {
 		var $canvas = canvasNode();
-		if (!$canvas.length || $canvas.hasClass('hlp-canvas-start')) {
+		if (!$canvas.length || $canvas.hasClass('s2wp-canvas-start')) {
 			return;
 		}
 		if (!isCanvasMounted($canvas)) {
 			return;
 		}
-		$('body').removeClass('hlp-picking-file').addClass('hlp-has-landing hlp-canvas-mounted');
+		$('body').removeClass('s2wp-picking-file').addClass('s2wp-has-landing s2wp-canvas-mounted');
 		syncEditorToggle();
 	}
 
@@ -394,7 +394,7 @@
 	}
 
 	function mountBlockCanvas() {
-		var $canvas = $('#hlp-canvas');
+		var $canvas = $('#s2wp-canvas');
 
 		// Classic (or a previous successful mount): already in the editor slot.
 		if ($canvas.length && !isInsideRoot($canvas)) {
@@ -402,7 +402,7 @@
 			return true;
 		}
 
-		var $root = $('#hlp-canvas-root');
+		var $root = $('#s2wp-canvas-root');
 		if ($root.length) {
 			canvasHtml = $root.html();
 			$root.remove();
@@ -421,7 +421,7 @@
 			 * (PHP already flagged the body). Otherwise TinyMCE would die on
 			 * every page, file or no file.
 			 */
-			if (document.body.className.indexOf('hlp-has-landing') !== -1) {
+			if (document.body.className.indexOf('s2wp-has-landing') !== -1) {
 				quietHiddenEditor();
 			}
 
@@ -441,29 +441,29 @@
 		}
 	});
 
-	$(document).on('click', '#hlp-start-file', function (e) {
+	$(document).on('click', '#s2wp-start-file', function (e) {
 		e.preventDefault();
 		$(this).hide();
-		$('#hlp-first-upload').prop('hidden', false);
-		$('body').addClass('hlp-picking-file');
+		$('#s2wp-first-upload').prop('hidden', false);
+		$('body').addClass('s2wp-picking-file');
 	});
 
-	$(document).on('click', '#hlp-cancel-start', function (e) {
+	$(document).on('click', '#s2wp-cancel-start', function (e) {
 		e.preventDefault();
-		$('#hlp-first-upload').prop('hidden', true);
-		$('#hlp-start-file').show();
-		$('body').removeClass('hlp-picking-file');
+		$('#s2wp-first-upload').prop('hidden', true);
+		$('#s2wp-start-file').show();
+		$('body').removeClass('s2wp-picking-file');
 	});
 
-	$(document).on('click', '#hlp-open-replace', function (e) {
+	$(document).on('click', '#s2wp-open-replace', function (e) {
 		e.preventDefault();
-		$('#hlp-replace-wrap').prop('hidden', false);
+		$('#s2wp-replace-wrap').prop('hidden', false);
 		$(this).hide();
 	});
 
-	$(document).on('click', '#hlp-show-editor', function (e) {
+	$(document).on('click', '#s2wp-show-editor', function (e) {
 		e.preventDefault();
-		$('body').toggleClass('hlp-editor-revealed');
+		$('body').toggleClass('s2wp-editor-revealed');
 		syncEditorToggle();
 	});
 
@@ -482,19 +482,19 @@
 	}
 
 	function editorContext() {
-		return $('#hlp-canvas').length || $('#hlp-canvas-root').length ? 'editor' : '';
+		return $('#s2wp-canvas').length || $('#s2wp-canvas-root').length ? 'editor' : '';
 	}
 
 	/* ---------------------------------------------------------------
 	 * Row actions: toggle, new version, rollback, delete version, delete
 	 * ------------------------------------------------------------- */
 
-	$(document).on('click', '.hlp-toggle', function () {
+	$(document).on('click', '.s2wp-toggle', function () {
 		var $btn = $(this);
 		$btn.prop('disabled', true);
 
 		var data = {
-			action: 'hlp_toggle',
+			action: 's2wp_toggle',
 			id: $btn.data('id'),
 			nonce: $btn.data('nonce')
 		};
@@ -503,7 +503,7 @@
 			data.context = ctx;
 		}
 
-		$.post(HLP.ajaxUrl, data)
+		$.post(S2WP.ajaxUrl, data)
 			.done(function (resp) {
 				if (resp && resp.success) {
 					if (ctx) {
@@ -528,16 +528,16 @@
 			return;
 		}
 		if (!/\.(html?|zip)$/i.test(file.name)) {
-			showNotice(HLP.strings.badType, 'error');
+			showNotice(S2WP.strings.badType, 'error');
 			return;
 		}
-		if (file.size > HLP.maxSize) {
-			showNotice(HLP.strings.tooBig, 'error');
+		if (file.size > S2WP.maxSize) {
+			showNotice(S2WP.strings.tooBig, 'error');
 			return;
 		}
 
 		var data = new FormData();
-		data.append('action', 'hlp_new_version');
+		data.append('action', 's2wp_new_version');
 		data.append('id', id);
 		data.append('nonce', nonce);
 		data.append('landing_file', file);
@@ -547,11 +547,11 @@
 		}
 
 		if ($busy) {
-			$busy.addClass('hlp-busy').prop('disabled', true);
+			$busy.addClass('s2wp-busy').prop('disabled', true);
 		}
 
 		$.ajax({
-			url: HLP.ajaxUrl,
+			url: S2WP.ajaxUrl,
 			type: 'POST',
 			data: data,
 			processData: false,
@@ -574,7 +574,7 @@
 			})
 			.always(function () {
 				if ($busy) {
-					$busy.removeClass('hlp-busy').prop('disabled', false);
+					$busy.removeClass('s2wp-busy').prop('disabled', false);
 				}
 			});
 	}
@@ -586,96 +586,96 @@
 			return;
 		}
 		if (!/\.(html?|zip)$/i.test(file.name)) {
-			showNotice(HLP.strings.badType, 'error');
+			showNotice(S2WP.strings.badType, 'error');
 			return;
 		}
-		if (file.size > HLP.maxSize) {
-			showNotice(HLP.strings.tooBig, 'error');
+		if (file.size > S2WP.maxSize) {
+			showNotice(S2WP.strings.tooBig, 'error');
 			return;
 		}
 		pendingCanvasFile = file;
-		$('#hlp-drop-name').text(file.name + ' (' + formatSize(file.size) + ')');
-		$('#hlp-canvas-drop').addClass('hlp-ready');
-		$('.hlp-drop-idle').prop('hidden', true);
-		$('.hlp-drop-ready').prop('hidden', false);
+		$('#s2wp-drop-name').text(file.name + ' (' + formatSize(file.size) + ')');
+		$('#s2wp-canvas-drop').addClass('s2wp-ready');
+		$('.s2wp-drop-idle').prop('hidden', true);
+		$('.s2wp-drop-ready').prop('hidden', false);
 	}
 
 	function clearCanvasFile() {
 		pendingCanvasFile = null;
-		$('#hlp-canvas-file').val('');
-		$('#hlp-canvas-drop').removeClass('hlp-ready');
-		$('.hlp-drop-idle').prop('hidden', false);
-		$('.hlp-drop-ready').prop('hidden', true);
+		$('#s2wp-canvas-file').val('');
+		$('#s2wp-canvas-drop').removeClass('s2wp-ready');
+		$('.s2wp-drop-idle').prop('hidden', false);
+		$('.s2wp-drop-ready').prop('hidden', true);
 	}
 
-	$(document).on('click keydown', '#hlp-canvas-drop', function (e) {
-		if ($(e.target).closest('#hlp-drop-confirm, #hlp-drop-cancel').length) {
+	$(document).on('click keydown', '#s2wp-canvas-drop', function (e) {
+		if ($(e.target).closest('#s2wp-drop-confirm, #s2wp-drop-cancel').length) {
 			return;
 		}
-		if ($('#hlp-canvas-drop').hasClass('hlp-ready')) {
+		if ($('#s2wp-canvas-drop').hasClass('s2wp-ready')) {
 			return;
 		}
 		if (e.type === 'keydown' && e.which !== 13 && e.which !== 32) {
 			return;
 		}
 		e.preventDefault();
-		$('#hlp-canvas-file').trigger('click');
+		$('#s2wp-canvas-file').trigger('click');
 	});
 
-	$(document).on('change', '#hlp-canvas-file', function () {
+	$(document).on('change', '#s2wp-canvas-file', function () {
 		if (this.files && this.files.length) {
 			stageCanvasFile(this.files[0]);
 		}
 	});
 
-	$(document).on('click', '#hlp-drop-confirm', function (e) {
+	$(document).on('click', '#s2wp-drop-confirm', function (e) {
 		e.preventDefault();
 		e.stopPropagation();
-		var $drop = $('#hlp-canvas-drop');
+		var $drop = $('#s2wp-canvas-drop');
 		if (!pendingCanvasFile) {
 			return;
 		}
 		uploadNewVersion(pendingCanvasFile, $drop.data('id'), $drop.data('nonce'), $drop);
 	});
 
-	$(document).on('click', '#hlp-drop-cancel', function (e) {
+	$(document).on('click', '#s2wp-drop-cancel', function (e) {
 		e.preventDefault();
 		e.stopPropagation();
 		clearCanvasFile();
 	});
 
-	$(document).on('dragenter dragover', '#hlp-canvas-drop', function (e) {
+	$(document).on('dragenter dragover', '#s2wp-canvas-drop', function (e) {
 		e.preventDefault();
 		e.stopPropagation();
-		$(this).addClass('hlp-dragover');
+		$(this).addClass('s2wp-dragover');
 	});
 
-	$(document).on('dragleave drop', '#hlp-canvas-drop', function (e) {
+	$(document).on('dragleave drop', '#s2wp-canvas-drop', function (e) {
 		e.preventDefault();
 		e.stopPropagation();
-		$(this).removeClass('hlp-dragover');
+		$(this).removeClass('s2wp-dragover');
 	});
 
-	$(document).on('drop', '#hlp-canvas-drop', function (e) {
+	$(document).on('drop', '#s2wp-canvas-drop', function (e) {
 		var dt = e.originalEvent.dataTransfer;
 		if (dt && dt.files && dt.files.length) {
 			stageCanvasFile(dt.files[0]);
 		}
 	});
 
-	$(document).on('click', '.hlp-rollback, .hlp-del-version', function () {
+	$(document).on('click', '.s2wp-rollback, .s2wp-del-version', function () {
 		var $btn = $(this);
-		var isDelete = $btn.hasClass('hlp-del-version');
+		var isDelete = $btn.hasClass('s2wp-del-version');
 		var v = $btn.data('v');
 
-		if (isDelete && !window.confirm(HLP.strings.confirmVersion)) {
+		if (isDelete && !window.confirm(S2WP.strings.confirmVersion)) {
 			return;
 		}
 
 		$btn.prop('disabled', true);
 
 		var data = {
-			action: isDelete ? 'hlp_delete_version' : 'hlp_rollback',
+			action: isDelete ? 's2wp_delete_version' : 's2wp_rollback',
 			id: $btn.data('id'),
 			v: v,
 			nonce: $btn.data('nonce')
@@ -685,7 +685,7 @@
 			data.context = ctx;
 		}
 
-		$.post(HLP.ajaxUrl, data)
+		$.post(S2WP.ajaxUrl, data)
 			.done(function (resp) {
 				if (resp && resp.success) {
 					if (ctx) {
@@ -705,17 +705,17 @@
 			});
 	});
 
-	$(document).on('click', '.hlp-delete', function () {
+	$(document).on('click', '.s2wp-delete', function () {
 		var $btn = $(this);
 
-		if (!window.confirm(HLP.strings.confirmDelete)) {
+		if (!window.confirm(S2WP.strings.confirmDelete)) {
 			return;
 		}
 
 		$btn.prop('disabled', true);
 
 		var data = {
-			action: 'hlp_delete',
+			action: 's2wp_delete',
 			id: $btn.data('id'),
 			nonce: $btn.data('nonce')
 		};
@@ -724,7 +724,7 @@
 			data.context = ctx;
 		}
 
-		$.post(HLP.ajaxUrl, data)
+		$.post(S2WP.ajaxUrl, data)
 			.done(function (resp) {
 				if (resp && resp.success) {
 					if (ctx) {
@@ -752,11 +752,11 @@
 	 * Live filter on the landings table
 	 * ------------------------------------------------------------- */
 
-	$(document).on('input', '#hlp-search', function () {
+	$(document).on('input', '#s2wp-search', function () {
 		var q = this.value.toLowerCase();
 		var visible = 0;
 
-		$('.hlp-table tbody tr').each(function () {
+		$('.s2wp-table tbody tr').each(function () {
 			var match = $(this).text().toLowerCase().indexOf(q) !== -1;
 			$(this).toggle(match);
 			if (match) {
@@ -764,7 +764,7 @@
 			}
 		});
 
-		$('.hlp-no-results').prop('hidden', visible > 0);
+		$('.s2wp-no-results').prop('hidden', visible > 0);
 	});
 
 	/* ---------------------------------------------------------------
@@ -772,18 +772,18 @@
 	 * ------------------------------------------------------------- */
 
 	function logLine(text, kind) {
-		var $log = $('#hlp-log');
+		var $log = $('#s2wp-log');
 		if (!$log.length) {
 			return;
 		}
-		$log.find('.hlp-log-empty').remove();
-		var cls = kind ? ' hlp-log-' + kind : '';
-		$('<div class="hlp-log-line' + cls + '"></div>').text(text).appendTo($log);
+		$log.find('.s2wp-log-empty').remove();
+		var cls = kind ? ' s2wp-log-' + kind : '';
+		$('<div class="s2wp-log-line' + cls + '"></div>').text(text).appendTo($log);
 		$log.scrollTop($log[0].scrollHeight);
 	}
 
 	function clearLog() {
-		$('#hlp-log').empty();
+		$('#s2wp-log').empty();
 	}
 
 	function formatSize(bytes) {

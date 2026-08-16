@@ -1,10 +1,10 @@
-=== HTML Landing Pages ===
-Contributors: amrrady
+=== Static2WP ===
+Contributors: 3mrr4dy
 Tags: landing page, html, static page, page template, upload
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.6.0
+Stable tag: 1.7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,7 +69,7 @@ Because full-takeover bypasses the theme, the plugin inherits WordPress (and SEO
 
 == Installation ==
 
-1. Upload the `html-landing-pages` folder to `/wp-content/plugins/` (or install the ZIP via Plugins → Add New → Upload).
+1. Upload the `static2wp` folder to `/wp-content/plugins/` (or install the ZIP via Plugins → Add New → Upload).
 2. Activate the plugin.
 3. Go to **Pages → Page file** to publish a file as a new page — or open any page and click **Show a file on this page**.
 
@@ -111,11 +111,13 @@ On the page itself — the plugin uses the page's excerpt as the meta descriptio
 
 == Changelog ==
 
-= 1.6.0 =
+= 1.7.0 =
+* Renamed: the plugin is now **Static2WP** (previously HTML Landing Pages). All prefixes, text domain, options and the uploads directory moved to the static2wp / s2wp_ namespace. Uploaded files keep working only if you migrate the old `hlp_landings` option to `s2wp_landings` (fresh installs need nothing).
+= 1.7.0 =
 * Fix: on the block editor the canvas now mounts into the Gutenberg skeleton. A canvas still sitting in the hidden footer template is no longer treated as mounted, so the panel appears and the visual editor is no longer blank.
 * New: **Edit page text** reveal toggle — the classic textarea is kept (TinyMCE stays off so the tab spinner cannot hang); both classic and block editors un-hide when revealed.
 * i18n: remaining admin JS strings live in `HLP.strings`; `view_url` is encoded before it is written into an href; `wp_set_script_translations` is registered for the admin script.
-* Uninstall now deletes the `_hlp_landing` page-meta index before removing options and files.
+* Uninstall now deletes the `_s2wp_landing` page-meta index before removing options and files.
 * URL rewrite preserves the original doctype when libxml drops it.
 * Docs: readme matches the 1.6 product (Pages → Page file, editor canvas, limitations).
 
@@ -123,7 +125,7 @@ On the page itself — the plugin uses the page's excerpt as the meta descriptio
 * Security: ZIP members are extracted via `getFromIndex` + `file_put_contents` onto an allow-list (no `extractTo()`, no symlinks), with realpath containment and a 2 MB HTML cap.
 * Security: publishing a landing or a new version requires `unfiltered_html`; creating a page requires `publish_pages`; attaching to an existing page requires `edit_post`. Auto-drafts are rejected.
 * Security: GET deactivate handler removed; takeover responses send `nocache` headers; `template_redirect` runs at priority 11 and skips feeds, embeds and robots.
-* Hardened uploads directory (`index.php` / `.htaccess`); post-meta index `_hlp_landing` for the public lookup.
+* Hardened uploads directory (`index.php` / `.htaccess`); post-meta index `_s2wp_landing` for the public lookup.
 * Admin-bar markup is stripped from takeovers so logged-in viewing no longer dumps an unstyled bar over the landing.
 * Tab-spinner fixes for the hidden classic editor.
 
