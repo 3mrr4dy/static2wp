@@ -3,7 +3,7 @@
  * Plugin Name:       Static2WP
  * Plugin URI:        https://github.com/3mrr4dy/static2wp
  * Description:       Upload an HTML or ZIP file and that page shows the file to visitors — not the theme. Create a page from a file, or attach one while editing.
- * Version:           1.7.1
+ * Version:           1.7.2
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * Author:            Amr Rady
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'S2WP_VERSION', '1.7.1' );
+define( 'S2WP_VERSION', '1.7.2' );
 define( 'S2WP_PLUGIN_FILE', __FILE__ );
 define( 'S2WP_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'S2WP_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -42,34 +42,47 @@ function s2wp_migrate_legacy() {
 
 	// 1. Landings option: hlp_landings -> s2wp_landings.
 	$legacy = get_option( 'hlp_landings' );
-	if ( is_array( $legacy ) && ! empty( $legacy ) ) {
+	if ( is_array( $legacy ) ) {
 		$current = get_option( 's2wp_landings', array() );
 		if ( ! is_array( $current ) ) {
 			$current = array();
 		}
 
-		// Rename the page-meta index first (ids are case-preserving, unchanged).
-		foreach ( $legacy as $id => $record ) {
-			if ( ! empty( $record['page_id'] ) ) {
-				$page_id = (int) $record['page_id'];
-				$meta    = get_post_meta( $page_id, '_hlp_landing', true );
-				if ( $meta ) {
-					delete_post_meta( $page_id, '_hlp_landing' );
-					update_post_meta( $page_id, '_s2wp_landing', $meta );
-				} elseif ( ! get_post_meta( $page_id, '_s2wp_landing', true ) ) {
-					update_post_meta( $page_id, '_s2wp_landing', $id );
+		if ( ! empty( $legacy ) ) {
+			// Rename the page-meta index first (ids are case-preserving, unchanged).
+			foreach ( $legacy as $id => $record ) {
+				if ( ! empty( $record['page_id'] ) ) {
+					$page_id = (int) $record['page_id'];
+					$meta    = get_post_meta( $page_id, '_hlp_landing', true );
+					if ( $meta ) {
+						delete_post_meta( $page_id, '_hlp_landing' );
+						update_post_meta( $page_id, '_s2wp_landing', $meta );
+					} elseif ( ! get_post_meta( $page_id, '_s2wp_landing', true ) ) {
+						update_post_meta( $page_id, '_s2wp_landing', $id );
+					}
 				}
 			}
+
+			update_option( 's2wp_landings', array_merge( $legacy, $current ), false );
+		} elseif ( empty( $current ) ) {
+			delete_option( 's2wp_landings' ); // Legacy cruft only — do not keep an empty twin.
 		}
 
-		update_option( 's2wp_landings', array_merge( $legacy, $current ), false );
 		delete_option( 'hlp_landings' );
 	}
 
 	// 2. Settings option: hlp_settings -> s2wp_settings.
 	$legacy_settings = get_option( 'hlp_settings' );
 	if ( is_array( $legacy_settings ) ) {
-		update_option( 's2wp_settings', $legacy_settings, false );
+		$current_settings = get_option( 's2wp_settings', array() );
+		if ( ! is_array( $current_settings ) ) {
+			$current_settings = array();
+		}
+		if ( ! empty( $legacy_settings ) ) {
+			update_option( 's2wp_settings', array_merge( $legacy_settings, $current_settings ), false );
+		} elseif ( empty( $current_settings ) ) {
+			delete_option( 's2wp_settings' );
+		}
 		delete_option( 'hlp_settings' );
 	}
 
