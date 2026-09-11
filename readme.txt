@@ -4,7 +4,7 @@ Tags: landing page, html, static page, page template, upload
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.7.2
+Stable tag: 1.8.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -103,6 +103,17 @@ Yes — paste it once under Pages → Page file → Tracking codes. It's injecte
 
 On the page itself — the plugin uses the page's excerpt as the meta description and its featured image as `og:image`.
 
+= WP-CLI =
+
+Command group: `wp s2wp` (since 1.8.0). Full flag/error reference: **`docs/wp-cli.md`** in the plugin folder, or `wp help s2wp`.
+
+There is no browser upload. `--file` is a path on the machine running `wp`; `--url` is downloaded by the server. Mutating commands need `--user`.
+
+    wp s2wp add --file=./landing.zip --name="Summer" --user=admin
+    wp s2wp add --url=https://example.com/site.zip --page=about --user=admin
+    wp s2wp list
+    wp s2wp version s2wp_abc123 --file=./v2.zip --user=admin
+
 = Limitations =
 
 * Uploaded files live under the WordPress uploads directory and are served as static files. Do not use this plugin on pages that require password privacy — anyone who knows (or guesses) the uploads URL can fetch the HTML and assets directly.
@@ -110,6 +121,12 @@ On the page itself — the plugin uses the page's excerpt as the meta descriptio
 * SVG uploads are blocked by design (they can execute script when opened directly).
 
 == Changelog ==
+
+= 1.8.0 =
+* New: WP-CLI command group `wp s2wp` — list, get, add, version, activate, deactivate, rollback, delete-version, delete.
+* Files are ingested from a local path (`--file`) or downloaded (`--url`). There is no HTTP upload in WP-CLI.
+* `store_upload()` now falls back to `copy()` so CLI/local paths work (move_uploaded_file only works for HTTP uploads).
+* Docs: `docs/wp-cli.md` (flags, capabilities, errors) plus `wp help s2wp`.
 
 = 1.7.2 =
 * UI: the admin screen and menu now use the Static2WP name.

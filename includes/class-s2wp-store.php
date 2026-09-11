@@ -281,7 +281,7 @@ class S2WP_Store {
 
 		if ( in_array( $ext, array( 'html', 'htm' ), true ) ) {
 			$target = $dir . '/index.html';
-			if ( ! move_uploaded_file( $file['tmp_name'], $target ) ) {
+			if ( ! move_uploaded_file( $file['tmp_name'], $target ) && ! copy( $file['tmp_name'], $target ) ) {
 				throw new Exception( __( 'Could not store the uploaded file.', 'static2wp' ) );
 			}
 			$log[] = __( 'Stored single HTML file as index.html.', 'static2wp' );
@@ -673,6 +673,144 @@ class S2WP_Store {
 	}
 
 	/**
+	 * Validate a local filesystem path as an .html / .zip landing file.
+	 *
+	 * @param string $path Absolute or relative path.
+	 * @return string Error message, or empty string when valid.
+	 */
+	public static function validate_local_file( $path ) {
+		$path = is_string( $path ) ? $path : '';
+		if ( '' === $path ) {
+			return __( 'No file path given.', 'static2wp' );
+		}
+
+		$real = realpath( $path );
+		if ( false === $real || ! is_file( $real ) || ! is_readable( $real ) ) {
+			return __( 'That file does not exist or is not readable.', 'static2wp' );
+		}
+
+		$size = filesize( $real );
+		if ( false === $size || $size > self::MAX_UPLOAD ) {
+			return __( 'File is larger than 100 MB.', 'static2wp' );
+		}
+
+		$ext = strtolower( pathinfo( $real, PATHINFO_EXTENSION ) );
+		if ( ! in_array( $ext, array( 'html', 'htm', 'zip' ), true ) ) {
+			return __( 'Only .html and .zip files are supported.', 'static2wp' );
+		}
+
+		$check = wp_check_filetype_and_ext(
+			$real,
+			basename( $real ),
+			array(
+				'html' => 'text/html',
+				'htm'  => 'text/html',
+				'zip'  => 'application/zip',
+			)
+		);
+		if ( empty( $check['ext'] ) || ! in_array( $check['ext'], array( 'html', 'htm', 'zip' ), true ) ) {
+			return __( 'That file does not look like a real .html or .zip file.', 'static2wp' );
+		}
+
+		if ( in_array( $ext, array( 'html', 'htm' ), true ) && $size > self::MAX_HTML ) {
+			return __( 'The HTML file is larger than 2 MB.', 'static2wp' );
+		}
+
+		return '';
+	}
+
+	/**
+	 * Store a local filesystem file into a landing directory (WP-CLI / scripts).
+	 *
+	 * The source file is copied, never deleted.
+	 *
+	 * @param string $dir  Landing directory.
+	 * @param string $path Path to .html or .zip.
+	 * @return array{entry:string,type:string,log:string[]}
+	 * @throws Exception On validation or filesystem failure.
+	 */
+	public static function store_from_path( $dir, $path ) {
+		$error = self::validate_local_file( $path );
+		if ( $error ) {
+			throw new Exception( $error );
+		}
+
+		$real = realpath( $path );
+		return self::store_upload(
+			$dir,
+			array(
+				'name'     => basename( $real ),
+				'tmp_name' => $real,
+				'size'     => filesize( $real ),
+				'error'    => 0,
+			)
+		);
+	}
+
+	/**
+	 * Append a new version from a local file and make it live.
+	 *
+	 * @param string $id   Landing ID.
+	 * @param string $path Path to .html or .zip.
+	 * @return array{success:bool,v:int,log:string[],error:string,record:array}
+	 */
+	public static function add_version_from_path( $id, $path ) {
+		$record = self::get( $id );
+		if ( ! $record ) {
+			return array(
+				'success' => false,
+				'v'       => 0,
+				'log'     => array(),
+				'error'   => __( 'This landing page no longer exists.', 'static2wp' ),
+				'record'  => array(),
+			);
+		}
+
+		$versions = self::normalize_versions( $record );
+		$v        = 1;
+		$now      = current_time( 'mysql' );
+		foreach ( $versions as $version ) {
+			$v = max( $v, (int) $version['v'] + 1 );
+		}
+
+		$dir = trailingslashit( self::landing_dir( $id ) ) . 'v-' . $v;
+		try {
+			$stored = self::store_from_path( $dir, $path );
+		} catch ( Exception $e ) {
+			self::remove_dir( $dir );
+			return array(
+				'success' => false,
+				'v'       => 0,
+				'log'     => array( $e->getMessage() ),
+				'error'   => $e->getMessage(),
+				'record'  => $record,
+			);
+		}
+
+		$versions[] = array(
+			'v'       => $v,
+			'dir'     => 'v-' . $v,
+			'entry'   => $stored['entry'],
+			'type'    => $stored['type'],
+			'created' => $now,
+		);
+
+		$record['versions']        = $versions;
+		$record['current_version'] = $v;
+		$record['entry']           = $stored['entry'];
+		$record['type']            = $stored['type'];
+		$record['updated']         = $now;
+		self::save( $id, $record );
+
+		return array(
+			'success' => true,
+			'v'       => $v,
+			'log'     => $stored['log'],
+			'error'   => '',
+			'record'  => $record,
+		);
+	}
+
 	/**
 	 * Normalize the version list of a record. Legacy records (single upload,
 	 * files at the landing-dir root) become version 1 with dir ''.
