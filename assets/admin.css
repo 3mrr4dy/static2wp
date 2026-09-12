@@ -27,6 +27,15 @@
 	font-size: 14px;
 }
 
+.s2wp-wrap .s2wp-tabs {
+	margin: 0 0 16px;
+	padding-top: 0;
+}
+
+.s2wp-tab[hidden] {
+	display: none;
+}
+
 .s2wp-grid {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -89,16 +98,85 @@
 	color: #0d9488;
 }
 
+.s2wp-dropzone.s2wp-uploading {
+	cursor: wait;
+	pointer-events: none;
+	border-color: #0d9488;
+}
+
+#s2wp-dropzone.s2wp-uploading .s2wp-drop-title,
+#s2wp-canvas-drop.s2wp-uploading .s2wp-drop-title {
+	font-size: 40px;
+	line-height: 1.1;
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+	color: #0d9488;
+}
+
 .s2wp-dropzone.s2wp-has-file {
 	border-style: solid;
 	border-color: #00a32a;
 	background: #f0faf1;
 }
 
+.s2wp-dropzone .s2wp-drop-check {
+	display: none !important;
+	font-size: 36px;
+	width: 36px;
+	height: 36px;
+	color: #00a32a;
+}
+
+.s2wp-dropzone.s2wp-has-file .s2wp-drop-check {
+	display: block !important;
+}
+
 .s2wp-filename {
 	font-weight: 600;
 	color: #1d2327;
 	word-break: break-all;
+}
+
+.s2wp-details[hidden],
+.s2wp-progress[hidden] {
+	display: none;
+}
+
+.s2wp-details {
+	margin-top: 18px;
+}
+
+.s2wp-progress {
+	width: 100%;
+	max-width: 420px;
+	margin: 16px 0 0;
+}
+
+.s2wp-progress-bar {
+	height: 14px;
+	background: #dcdcde;
+	border-radius: 999px;
+	overflow: hidden;
+	direction: ltr;
+}
+
+.s2wp-progress-fill {
+	display: block;
+	height: 100%;
+	width: 0;
+	background: #0d9488;
+	transition: width 0.15s ease;
+}
+
+.s2wp-progress-label {
+	margin: 10px 0 0;
+	font-size: 13px;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+	color: #646970;
+	direction: ltr;
+	unicode-bidi: isolate;
+	text-align: center;
 }
 
 /* Fields */
@@ -674,7 +752,10 @@ body.s2wp-canvas-mounted:not(.s2wp-editor-revealed) .editor-visual-editor {
 
 .s2wp-drop-actions {
 	display: flex;
+	justify-content: center;
+	flex-wrap: wrap;
 	gap: 8px;
+	width: 100%;
 	margin-top: 6px;
 }
 

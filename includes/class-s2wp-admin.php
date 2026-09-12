@@ -45,13 +45,15 @@ class S2WP_Admin {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'wp_ajax_s2wp_save', array( $this, 'ajax_save' ) );
+		add_action( 'wp_ajax_s2wp_stage', array( $this, 'ajax_stage' ) );
+		add_action( 'wp_ajax_s2wp_discard_stage', array( $this, 'ajax_discard_stage' ) );
 		add_action( 'wp_ajax_s2wp_toggle', array( $this, 'ajax_toggle' ) );
 		add_action( 'wp_ajax_s2wp_new_version', array( $this, 'ajax_new_version' ) );
 		add_action( 'wp_ajax_s2wp_rollback', array( $this, 'ajax_rollback' ) );
 		add_action( 'wp_ajax_s2wp_delete_version', array( $this, 'ajax_delete_version' ) );
 		add_action( 'wp_ajax_s2wp_delete', array( $this, 'ajax_delete' ) );
+		add_action( 'wp_ajax_s2wp_delete_file', array( $this, 'ajax_delete_file' ) );
 		add_action( 'admin_post_s2wp_save', array( $this, 'post_save' ) );
-		add_action( 'admin_post_s2wp_settings', array( $this, 'post_settings' ) );
 	}
 
 	/**
@@ -90,9 +92,13 @@ class S2WP_Admin {
 					'badType'        => __( 'Only HTML or ZIP files are allowed.', 'static2wp' ),
 					'tooBig'         => __( 'File is larger than 100 MB.', 'static2wp' ),
 					'uploading'      => __( 'Uploading…', 'static2wp' ),
+					'dropHere'       => __( 'Drop a file here', 'static2wp' ),
+					'fileReady'      => __( 'File ready', 'static2wp' ),
+					'leaveUnsaved'   => __( 'The file is not on a page yet. Leave anyway? The uploaded file will be deleted.', 'static2wp' ),
 					'error'          => __( 'Something went wrong. Try again.', 'static2wp' ),
 					'confirmVersion' => __( 'Delete this older file?', 'static2wp' ),
 					'confirmDelete'  => __( 'Remove the file from this page? The page itself stays.', 'static2wp' ),
+					'confirmFile'    => __( 'Delete this file? This cannot be undone.', 'static2wp' ),
 					'showEditor'     => __( 'Edit page text', 'static2wp' ),
 					'hideEditor'     => __( 'Hide page text', 'static2wp' ),
 					'activeBadge'    => __( 'Active', 'static2wp' ),
@@ -130,40 +136,61 @@ class S2WP_Admin {
 				</div>
 			<?php endif; ?>
 
+			<nav class="nav-tab-wrapper s2wp-tabs" aria-label="<?php esc_attr_e( 'Static2WP sections', 'static2wp' ); ?>">
+				<a href="#s2wp-tab-upload" class="nav-tab nav-tab-active"><?php esc_html_e( 'Upload', 'static2wp' ); ?></a>
+				<a href="#s2wp-tab-pages" class="nav-tab"><?php esc_html_e( 'Pages', 'static2wp' ); ?></a>
+				<a href="#s2wp-tab-files" class="nav-tab"><?php esc_html_e( 'Files', 'static2wp' ); ?></a>
+			</nav>
+
+			<div id="s2wp-tab-upload" class="s2wp-tab">
 			<div class="s2wp-card">
 				<form id="s2wp-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" enctype="multipart/form-data">
 					<input type="hidden" name="action" value="s2wp_save">
 					<?php wp_nonce_field( 's2wp_save', 's2wp_nonce' ); ?>
 
 					<div id="s2wp-dropzone" class="s2wp-dropzone" tabindex="0" role="button" aria-label="<?php esc_attr_e( 'Drop a file here', 'static2wp' ); ?>">
-						<strong><?php esc_html_e( 'Drop a file here', 'static2wp' ); ?></strong>
-						<span><?php esc_html_e( 'or click to choose — HTML or ZIP', 'static2wp' ); ?></span>
+						<span class="dashicons dashicons-yes-alt s2wp-drop-check" hidden aria-hidden="true"></span>
+						<strong class="s2wp-drop-title"><?php esc_html_e( 'Drop a file here', 'static2wp' ); ?></strong>
+						<span class="s2wp-drop-hint"><?php esc_html_e( 'or click to choose — HTML or ZIP', 'static2wp' ); ?></span>
 						<span id="s2wp-filename" class="s2wp-filename"></span>
+						<div id="s2wp-progress" class="s2wp-progress" hidden>
+							<div class="s2wp-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+								<span class="s2wp-progress-fill"></span>
+							</div>
+							<p class="s2wp-progress-label" dir="ltr"><span id="s2wp-progress-pct">0%</span></p>
+						</div>
 					</div>
 					<input type="file" id="s2wp-file" name="landing_file" accept=".html,.htm,.zip" hidden>
 
-					<div class="s2wp-fields">
-						<label>
-							<?php esc_html_e( 'Page name', 'static2wp' ); ?>
-							<input type="text" name="landing_name" id="s2wp-name" placeholder="<?php esc_attr_e( 'Summer offer', 'static2wp' ); ?>">
-						</label>
-						<label>
-							<?php esc_html_e( 'Or attach to an existing page', 'static2wp' ); ?>
-							<?php $this->pages_dropdown(); ?>
-						</label>
-					</div>
+					<div id="s2wp-details" class="s2wp-details" hidden>
+						<div class="s2wp-fields">
+							<label>
+								<?php esc_html_e( 'Page name', 'static2wp' ); ?>
+								<input type="text" name="landing_name" id="s2wp-name" placeholder="<?php esc_attr_e( 'Summer offer', 'static2wp' ); ?>">
+							</label>
+							<label>
+								<?php esc_html_e( 'Or attach to an existing page', 'static2wp' ); ?>
+								<?php $this->pages_dropdown(); ?>
+							</label>
+						</div>
 
-					<button type="submit" id="s2wp-submit" class="button button-primary" disabled>
-						<?php esc_html_e( 'Publish page', 'static2wp' ); ?>
-					</button>
+						<button type="submit" id="s2wp-submit" class="button button-primary" disabled>
+							<?php esc_html_e( 'Publish page', 'static2wp' ); ?>
+						</button>
+					</div>
 					<div id="s2wp-log" class="s2wp-log" hidden></div>
 					<div id="s2wp-result" class="s2wp-result" hidden></div>
 				</form>
 			</div>
+			</div>
 
+			<div id="s2wp-tab-pages" class="s2wp-tab" hidden>
 			<?php $this->render_landings_table(); ?>
+			</div>
 
-			<?php $this->render_settings_card(); ?>
+			<div id="s2wp-tab-files" class="s2wp-tab" hidden>
+			<?php $this->render_files_table(); ?>
+			</div>
 		</div>
 		<?php
 	}
@@ -278,40 +305,88 @@ class S2WP_Admin {
 	}
 
 	/**
-	 * Render the global settings card (tracking codes + SEO injection).
+	 * All uploaded files. Delete is allowed only when the file is not on a page.
 	 */
-	private function render_settings_card() {
-		$settings = S2WP_Store::settings();
+	private function render_files_table() {
+		$rows = array();
+
+		foreach ( S2WP_Store::list_staged() as $staged ) {
+			$rows[] = array(
+				'kind'   => 'staged',
+				'id'     => $staged['token'],
+				'name'   => $staged['name'],
+				'size'   => (int) $staged['size'],
+				'linked' => false,
+				'page'   => '',
+				'view'   => '',
+			);
+		}
+
+		foreach ( S2WP_Store::get_all() as $id => $record ) {
+			$page   = ! empty( $record['page_id'] ) ? get_post( (int) $record['page_id'] ) : null;
+			$linked = $page && 'page' === $page->post_type;
+			$rows[] = array(
+				'kind'   => 'landing',
+				'id'     => $id,
+				'name'   => $record['name'],
+				'size'   => 0,
+				'linked' => $linked,
+				'page'   => $linked ? $page->post_title : '',
+				'view'   => $linked ? get_permalink( $page ) : '',
+			);
+		}
 		?>
 		<div class="s2wp-card">
-			<h2><?php esc_html_e( 'Tracking codes', 'static2wp' ); ?></h2>
+			<div class="s2wp-table-head">
+				<h2><?php esc_html_e( 'Files', 'static2wp' ); ?></h2>
+				<?php if ( ! empty( $rows ) ) : ?>
+					<input type="search" id="s2wp-search-files" class="s2wp-search" placeholder="<?php esc_attr_e( 'Search…', 'static2wp' ); ?>">
+				<?php endif; ?>
+			</div>
 
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-				<input type="hidden" name="action" value="s2wp_settings">
-				<?php wp_nonce_field( 's2wp_settings', 's2wp_settings_nonce' ); ?>
-
-				<div class="s2wp-settings-grid">
-					<label>
-						<strong><?php esc_html_e( 'Head code', 'static2wp' ); ?></strong>
-						<span class="s2wp-field-note"><?php esc_html_e( 'Analytics or pixels — added to the top of the page.', 'static2wp' ); ?></span>
-						<textarea name="head_code" class="s2wp-code" rows="5" spellcheck="false" placeholder="<!-- GTM / analytics / pixel code -->"><?php echo esc_textarea( $settings['head_code'] ); ?></textarea>
-					</label>
-					<label>
-						<strong><?php esc_html_e( 'Body code', 'static2wp' ); ?></strong>
-						<span class="s2wp-field-note"><?php esc_html_e( 'Added as soon as the page opens.', 'static2wp' ); ?></span>
-						<textarea name="body_code" class="s2wp-code" rows="5" spellcheck="false" placeholder="<!-- GTM <noscript> -->"><?php echo esc_textarea( $settings['body_code'] ); ?></textarea>
-					</label>
+			<?php if ( empty( $rows ) ) : ?>
+				<div class="s2wp-empty">
+					<span class="dashicons dashicons-media-default"></span>
+					<strong><?php esc_html_e( 'No files yet', 'static2wp' ); ?></strong>
+					<p><?php esc_html_e( 'Upload a file first. Unused files can be deleted here.', 'static2wp' ); ?></p>
 				</div>
-
-				<div class="s2wp-options">
-					<label><input type="checkbox" name="inject_all" value="1" <?php checked( $settings['inject_all'] ); ?>> <?php esc_html_e( 'Also add these codes on the rest of the site', 'static2wp' ); ?></label>
-					<label><input type="checkbox" name="seo_meta" value="1" <?php checked( $settings['seo_meta'] ); ?>> <?php esc_html_e( 'Use the page title and description in Google', 'static2wp' ); ?></label>
-				</div>
-
-				<button type="submit" class="button button-primary">
-					<?php esc_html_e( 'Save', 'static2wp' ); ?>
-				</button>
-			</form>
+			<?php else : ?>
+			<table class="widefat striped s2wp-table">
+				<thead>
+					<tr>
+						<th><?php esc_html_e( 'File', 'static2wp' ); ?></th>
+						<th><?php esc_html_e( 'Size', 'static2wp' ); ?></th>
+						<th><?php esc_html_e( 'Page', 'static2wp' ); ?></th>
+						<th><?php esc_html_e( 'Actions', 'static2wp' ); ?></th>
+					</tr>
+				</thead>
+				<tbody>
+				<?php foreach ( $rows as $row ) : ?>
+					<tr data-kind="<?php echo esc_attr( $row['kind'] ); ?>" data-id="<?php echo esc_attr( $row['id'] ); ?>">
+						<td><strong><?php echo esc_html( $row['name'] ); ?></strong></td>
+						<td><?php echo $row['size'] ? esc_html( size_format( $row['size'] ) ) : '—'; ?></td>
+						<td>
+							<?php if ( $row['linked'] ) : ?>
+								<a href="<?php echo esc_url( $row['view'] ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $row['page'] ); ?></a>
+							<?php else : ?>
+								<span><?php esc_html_e( 'Not attached', 'static2wp' ); ?></span>
+							<?php endif; ?>
+						</td>
+						<td class="s2wp-actions">
+							<?php if ( $row['linked'] ) : ?>
+								<button type="button" class="button button-small" disabled><?php esc_html_e( 'In use', 'static2wp' ); ?></button>
+							<?php else : ?>
+								<button type="button" class="button button-small s2wp-delete-file" data-kind="<?php echo esc_attr( $row['kind'] ); ?>" data-id="<?php echo esc_attr( $row['id'] ); ?>" data-nonce="<?php echo esc_attr( wp_create_nonce( 's2wp_delete_file_' . $row['kind'] . '_' . $row['id'] ) ); ?>">
+									<?php esc_html_e( 'Delete', 'static2wp' ); ?>
+								</button>
+							<?php endif; ?>
+						</td>
+					</tr>
+				<?php endforeach; ?>
+				</tbody>
+			</table>
+			<p class="s2wp-no-results" hidden><?php esc_html_e( 'Nothing matches.', 'static2wp' ); ?></p>
+			<?php endif; ?>
 		</div>
 		<?php
 	}
@@ -321,54 +396,78 @@ class S2WP_Admin {
 	 * ------------------------------------------------------------------- */
 
 	/**
-	 * Save global settings (classic POST).
-	 *
-	 * Flags need edit_pages only; the raw tracking-code fields additionally
-	 * require unfiltered_html — without it the existing codes are kept.
+	 * One-click deactivate was removed (dead GET side-effect endpoint).
 	 */
-	public function post_settings() {
-		if ( ! isset( $_POST['s2wp_settings_nonce'] ) || ! wp_verify_nonce( sanitize_key( wp_unslash( $_POST['s2wp_settings_nonce'] ) ), 's2wp_settings' ) ) {
-			wp_die( esc_html__( 'Security check failed.', 'static2wp' ) );
-		}
-		if ( ! current_user_can( 'edit_pages' ) ) {
-			wp_die( esc_html__( 'Permission denied.', 'static2wp' ) );
-		}
 
-		$existing = S2WP_Store::settings();
+	/**
+	 * AJAX: park the file on the server (progress happens here). Publish is a second step.
+	 */
+	public function ajax_stage() {
+		check_ajax_referer( 's2wp_save', 'nonce' );
 
-		if ( current_user_can( 'unfiltered_html' ) ) {
-			$head_code = isset( $_POST['head_code'] ) ? trim( (string) wp_unslash( $_POST['head_code'] ) ) : '';
-			$body_code = isset( $_POST['body_code'] ) ? trim( (string) wp_unslash( $_POST['body_code'] ) ) : '';
-		} else {
-			$head_code = $existing['head_code'];
-			$body_code = $existing['body_code'];
+		if ( ! current_user_can( 'edit_pages' ) || ! current_user_can( 'unfiltered_html' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied. Publishing a raw HTML page requires the "unfiltered_html" capability.', 'static2wp' ) ), 403 );
 		}
 
-		S2WP_Store::save_settings(
-			array(
-				'head_code'  => $head_code,
-				'body_code'  => $body_code,
-				'inject_all' => ! empty( $_POST['inject_all'] ),
-				'seo_meta'   => ! empty( $_POST['seo_meta'] ),
-			)
-		);
+		$staged = S2WP_Store::stage_upload( 'landing_file' );
+		if ( ! empty( $staged['error'] ) ) {
+			wp_send_json_error( array( 'message' => $staged['error'] ), 400 );
+		}
 
-		wp_safe_redirect(
-			add_query_arg(
-				array(
-					'page'        => self::MENU_SLUG,
-					's2wp_notice'  => 'success',
-					's2wp_message' => __( 'Settings saved.', 'static2wp' ),
-				),
-				admin_url( 'edit.php?post_type=page' )
-			)
-		);
-		exit;
+		wp_send_json_success( $staged );
 	}
 
 	/**
-	 * One-click deactivate was removed (dead GET side-effect endpoint).
+	 * AJAX: delete a staged upload the user abandoned.
 	 */
+	public function ajax_discard_stage() {
+		check_ajax_referer( 's2wp_save', 'nonce' );
+
+		if ( ! current_user_can( 'edit_pages' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'static2wp' ) ), 403 );
+		}
+
+		$token = isset( $_POST['stage_token'] ) ? sanitize_key( wp_unslash( $_POST['stage_token'] ) ) : '';
+		if ( '' !== $token ) {
+			S2WP_Store::release_stage( $token );
+		}
+
+		wp_send_json_success();
+	}
+
+	/**
+	 * AJAX: delete a file that is not attached to a page.
+	 */
+	public function ajax_delete_file() {
+		if ( ! current_user_can( 'edit_pages' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'static2wp' ) ), 403 );
+		}
+
+		$kind = isset( $_POST['kind'] ) ? sanitize_key( wp_unslash( $_POST['kind'] ) ) : '';
+		$id   = isset( $_POST['id'] ) ? sanitize_text_field( wp_unslash( $_POST['id'] ) ) : '';
+		if ( ! in_array( $kind, array( 'staged', 'landing' ), true ) || '' === $id ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid file.', 'static2wp' ) ), 400 );
+		}
+
+		if ( empty( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_key( wp_unslash( $_POST['nonce'] ) ), 's2wp_delete_file_' . $kind . '_' . $id ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed. Please reload the page and try again.', 'static2wp' ) ), 400 );
+		}
+
+		if ( 'staged' === $kind ) {
+			if ( ! S2WP_Store::delete_staged( $id ) ) {
+				wp_send_json_error( array( 'message' => __( 'Could not delete that file.', 'static2wp' ) ), 400 );
+			}
+			wp_send_json_success( array( 'message' => __( 'File deleted.', 'static2wp' ) ) );
+		}
+
+		$id = S2WP_Store::validate_id( $id );
+		if ( '' === $id || ! S2WP_Store::is_unlinked( $id ) ) {
+			wp_send_json_error( array( 'message' => __( 'This file is attached to a page and cannot be deleted.', 'static2wp' ) ), 400 );
+		}
+
+		S2WP_Store::delete( $id );
+		wp_send_json_success( array( 'message' => __( 'File deleted.', 'static2wp' ) ) );
+	}
 
 	/**
 	 * AJAX: upload + publish a new landing.
@@ -462,26 +561,28 @@ class S2WP_Admin {
 
 		$file_error = S2WP_Store::validate_upload( 'landing_file' );
 		if ( $file_error ) {
-			$outcome['error'] = $file_error;
+			$outcome['error']   = $file_error;
+			$outcome['message'] = $file_error;
 			wp_send_json_error( $outcome );
 		}
 
 		$record   = S2WP_Store::get( $id );
 		$versions = S2WP_Store::normalize_versions( $record );
+		$v        = S2WP_Store::next_version_number( $id, $versions );
+		$now      = current_time( 'mysql' );
 
-		$v   = 1;
-		$now = current_time( 'mysql' );
-		foreach ( $versions as $version ) {
-			$v = max( $v, (int) $version['v'] + 1 );
+		if ( function_exists( 'set_time_limit' ) ) {
+			set_time_limit( 300 );
 		}
 
 		$dir = trailingslashit( S2WP_Store::landing_dir( $id ) ) . 'v-' . $v;
 		try {
 			$stored = S2WP_Store::store_upload( $dir, $_FILES['landing_file'] );
-		} catch ( Exception $e ) {
+		} catch ( Throwable $e ) {
 			S2WP_Store::remove_dir( $dir );
-			$outcome['log']   = array( $e->getMessage() );
-			$outcome['error'] = $e->getMessage();
+			$outcome['log']     = array( $e->getMessage() );
+			$outcome['error']   = $e->getMessage();
+			$outcome['message'] = $e->getMessage();
 			wp_send_json_error( $outcome );
 		}
 
@@ -505,7 +606,11 @@ class S2WP_Admin {
 		$outcome['log']     = $stored['log'];
 		$outcome['type']    = $stored['type'];
 		$outcome['message'] = __( 'The new file is now live.', 'static2wp' );
-		$outcome            = $this->with_editor_html( $outcome, $record );
+		try {
+			$outcome = $this->with_editor_html( $outcome, $record );
+		} catch ( Throwable $e ) {
+			$outcome['canvas_html'] = '';
+		}
 		wp_send_json_success( $outcome );
 	}
 
@@ -671,8 +776,9 @@ class S2WP_Admin {
 	private function handle_save( $request, $file_key ) {
 		$name    = isset( $request['landing_name'] ) ? sanitize_text_field( wp_unslash( $request['landing_name'] ) ) : '';
 		$page_id = isset( $request['page_id'] ) ? absint( $request['page_id'] ) : 0;
+		$token   = isset( $request['stage_token'] ) ? sanitize_key( wp_unslash( $request['stage_token'] ) ) : '';
 
-		$outcome = S2WP_Store::create_for_page( $page_id, $name, $file_key );
+		$outcome = S2WP_Store::create_for_page( $page_id, $name, $file_key, $token );
 
 		// create_for_page resolves "new page" itself — use its page, not the request's 0.
 		if ( $outcome['success'] && $this->is_editor_request() && ! empty( $outcome['page_id'] ) ) {

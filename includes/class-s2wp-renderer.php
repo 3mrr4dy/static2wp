@@ -67,6 +67,8 @@ class S2WP_Renderer {
 			return;
 		}
 
+		self::skip_page_optimizers();
+
 		// Respect WordPress password protection on the assigned page.
 		$post = get_post( $page_id );
 		if ( $post && post_password_required( $post ) ) {
@@ -84,6 +86,7 @@ class S2WP_Renderer {
 		}
 
 		$base_url = trailingslashit( S2WP_Store::current_base_url( $landing ) );
+		$base_url = set_url_scheme( $base_url, is_ssl() ? 'https' : 'http' );
 		$entry    = S2WP_Store::current_entry( $landing );
 		$base_rel = trailingslashit( dirname( $entry ) );
 		$base_rel = ( './' === $base_rel ) ? '' : $base_rel;
@@ -119,10 +122,20 @@ class S2WP_Renderer {
 			$html = self::inject_seo( $html, $post ); // Fallback only — fills gaps WP didn't provide.
 		}
 		$html = self::inject_codes( $html, $settings ); // Global tracking codes (removed from the capture above).
+		$html = self::force_https_assets( $html );
 
 		status_header( 200 );
-		header( 'Content-Type: text/html; charset=utf-8' );
-		nocache_headers(); // Page caches must not pin takeover HTML after deactivate/rollback.
+		if ( ! headers_sent() ) {
+			header( 'Content-Type: text/html; charset=utf-8' );
+			header( 'X-LiteSpeed-Cache-Control: no-cache' );
+		}
+		nocache_headers();
+
+		remove_all_actions( 'shutdown' );
+		while ( ob_get_level() > 0 ) {
+			ob_end_clean();
+		}
+
 		echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- full admin-provided HTML document, by design.
 		exit;
 	}
@@ -145,9 +158,9 @@ class S2WP_Renderer {
 		$foot = self::ob_capture( 'wp_footer' );
 
 		return array(
-			'head'      => self::strip_admin_chrome( self::strip_design_assets( $head ) ),
-			'body_open' => self::strip_admin_chrome( self::strip_design_assets( $body ) ),
-			'footer'    => self::strip_admin_chrome( self::strip_design_assets( $foot ) ),
+			'head'      => self::keep_tracking_only( $head ),
+			'body_open' => self::keep_tracking_only( $body ),
+			'footer'    => self::keep_tracking_only( $foot ),
 		);
 	}
 
@@ -203,6 +216,82 @@ class S2WP_Renderer {
 		$chunk = preg_replace( '#<script[^>]*\bsrc=[^>]*>\s*</script>#i', '', $chunk );
 
 		return $chunk;
+	}
+
+	/**
+	 * Keep only tracking/SEO tags from wp_footer / wp_body_open so the
+	 * theme's header/footer markup never leaks onto the landing.
+	 *
+	 * @param string $chunk Captured HTML.
+	 * @return string
+	 */
+	/**
+	 * Upgrade same-host http:// asset URLs when the request is HTTPS.
+	 *
+	 * @param string $html Document.
+	 * @return string
+	 */
+	/**
+	 * Stop LiteSpeed / Perfmatters / cache plugins from rewriting landing HTML.
+	 */
+	private static function skip_page_optimizers() {
+		foreach ( array( 'DONOTCACHEPAGE', 'DONOTMINIFY', 'DONOTROCKETOPTIMIZE', 'LITESPEED_NO_PAGEOPTM', 'LITESPEED_NO_LAZY', 'LITESPEED_NO_OPTM' ) as $const ) {
+			if ( ! defined( $const ) ) {
+				define( $const, true );
+			}
+		}
+		do_action( 'litespeed_control_set_nocache', 'static2wp' );
+	}
+
+	private static function force_https_assets( $html ) {
+		if ( ! is_ssl() ) {
+			return $html;
+		}
+		$host = wp_parse_url( home_url(), PHP_URL_HOST );
+		if ( ! is_string( $host ) || '' === $host ) {
+			return $html;
+		}
+		return str_replace( 'http://' . $host, 'https://' . $host, $html );
+	}
+
+	private static function keep_tracking_only( $chunk ) {
+		$chunk = self::strip_admin_chrome( self::strip_design_assets( $chunk ) );
+		if ( '' === trim( $chunk ) || ! class_exists( 'DOMDocument' ) ) {
+			return '';
+		}
+
+		$dom  = new DOMDocument();
+		$prev = libxml_use_internal_errors( true );
+		$dom->loadHTML( '<?xml encoding="UTF-8"?><div id="s2wp-cap">' . $chunk . '</div>' );
+		libxml_clear_errors();
+		libxml_use_internal_errors( $prev );
+
+		$keep  = array();
+		$xpath = new DOMXPath( $dom );
+		foreach ( $xpath->query( '//script|//noscript|//meta|//link' ) as $el ) {
+			$name = strtolower( $el->nodeName );
+			if ( 'link' === $name ) {
+				$rel = strtolower( $el->getAttribute( 'rel' ) );
+				if ( in_array( $rel, array( 'stylesheet', 'preload', 'modulepreload' ), true ) ) {
+					continue;
+				}
+			}
+			if ( 'script' === $name ) {
+				if ( $el->hasAttribute( 'src' ) ) {
+					continue;
+				}
+				$type = strtolower( $el->getAttribute( 'type' ) );
+				$code = $el->textContent;
+				$keep_script = ( 'application/ld+json' === $type )
+					|| (bool) preg_match( '/gtag\(|GTM-|dataLayer|fbq\(|twq\(|clarity\(|lintrk\(|ttq\(/i', $code );
+				if ( ! $keep_script ) {
+					continue;
+				}
+			}
+			$keep[] = $dom->saveHTML( $el );
+		}
+
+		return implode( "\n", $keep );
 	}
 
 	/**
@@ -421,7 +510,7 @@ class S2WP_Renderer {
 			$el->setAttribute( 'poster', self::rewrite_url( $el->getAttribute( 'poster' ), $base_url, $base_rel ) );
 		}
 		// Common lazy-load attributes used by exported landing templates.
-		foreach ( array( 'data-src', 'data-background', 'data-background-image' ) as $attr ) {
+		foreach ( array( 'data-src', 'data-bg', 'data-background', 'data-background-image', 'data-lazy-src' ) as $attr ) {
 			foreach ( $xpath->query( '//*[@' . $attr . ']' ) as $el ) {
 				$value = trim( $el->getAttribute( $attr ) );
 				if ( '' === $value || '{' === $value[0] ) {

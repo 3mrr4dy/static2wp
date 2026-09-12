@@ -105,6 +105,72 @@
 		showNotice(msg, 'error');
 	}
 
+	var stagedToken = '';
+	var uploadXhr = null;
+
+	function isLeaveDirty() {
+		return !!(stagedToken || uploadXhr);
+	}
+
+	function abandonUpload() {
+		if (uploadXhr) {
+			var xhr = uploadXhr;
+			uploadXhr = null;
+			xhr.abort();
+		}
+		if (stagedToken) {
+			discardStage(stagedToken);
+			stagedToken = '';
+		}
+	}
+
+	function discardStage(token) {
+		if (!token) {
+			return;
+		}
+		var data = new FormData();
+		data.append('action', 's2wp_discard_stage');
+		data.append('nonce', S2WP.nonce);
+		data.append('stage_token', token);
+		if (navigator.sendBeacon) {
+			navigator.sendBeacon(S2WP.ajaxUrl, data);
+			return;
+		}
+		$.post(S2WP.ajaxUrl, {
+			action: 's2wp_discard_stage',
+			nonce: S2WP.nonce,
+			stage_token: token
+		});
+	}
+
+	$(window).on('beforeunload', function (e) {
+		if (!isLeaveDirty()) {
+			return;
+		}
+		e.preventDefault();
+		e.originalEvent.returnValue = S2WP.strings.leaveUnsaved;
+		return S2WP.strings.leaveUnsaved;
+	});
+
+	$(window).on('pagehide', function () {
+		abandonUpload();
+	});
+
+	$(document).on('click', 'a[href]', function (e) {
+		if (!isLeaveDirty()) {
+			return;
+		}
+		var href = this.getAttribute('href');
+		if (!href || href.charAt(0) === '#' || href.indexOf('javascript:') === 0 || this.target === '_blank') {
+			return;
+		}
+		if (!window.confirm(S2WP.strings.leaveUnsaved)) {
+			e.preventDefault();
+			return;
+		}
+		abandonUpload();
+	});
+
 	/* ---------------------------------------------------------------
 	 * Upload UI (admin screen form + editor canvas uploader)
 	 * ------------------------------------------------------------- */
@@ -165,26 +231,102 @@
 		 */
 		function acceptFile(file) {
 			clearLog();
+			$('#s2wp-result').prop('hidden', true).empty();
 
 			if (!/\.(html?|zip)$/i.test(file.name)) {
-				logLine(S2WP.strings.badType, 'error');
+				showNotice(S2WP.strings.badType, 'error');
 				$submit.prop('disabled', true);
+				$('#s2wp-details').prop('hidden', true);
+				$dropzone.removeClass('s2wp-has-file');
+				$dropzone.find('.s2wp-drop-check').prop('hidden', true);
 				return;
 			}
 			if (file.size > S2WP.maxSize) {
-				logLine(S2WP.strings.tooBig, 'error');
+				showNotice(S2WP.strings.tooBig, 'error');
 				$submit.prop('disabled', true);
+				$('#s2wp-details').prop('hidden', true);
+				$dropzone.removeClass('s2wp-has-file');
+				$dropzone.find('.s2wp-drop-check').prop('hidden', true);
 				return;
 			}
 
-			$filename.text(file.name + ' (' + formatSize(file.size) + ')');
-			$dropzone.addClass('s2wp-has-file');
-			$submit.prop('disabled', false);
+			if (stagedToken) {
+				discardStage(stagedToken);
+			}
+			stagedToken = '';
+			$dropzone.removeClass('s2wp-has-file').addClass('s2wp-uploading');
+			$dropzone.find('.s2wp-drop-check').prop('hidden', true);
+			$dropzone.find('.s2wp-drop-title').text('0%');
+			$dropzone.find('.s2wp-drop-hint').text(file.name + ' (' + formatSize(file.size) + ')');
+			$filename.text('');
+			$('#s2wp-details').prop('hidden', true);
+			$submit.prop('disabled', true);
+			setProgress(0, true, 0, file.size);
 
-			// Pre-fill the landing name from the file name if empty.
 			if (!$name.val()) {
 				$name.val(file.name.replace(/\.(html?|zip)$/i, '').replace(/[-_]+/g, ' ').trim());
 			}
+
+			var data = new FormData();
+			data.append('action', 's2wp_stage');
+			data.append('nonce', S2WP.nonce);
+			data.append('landing_file', file);
+
+			var xhr = new window.XMLHttpRequest();
+			uploadXhr = xhr;
+			xhr.open('POST', S2WP.ajaxUrl);
+			xhr.upload.onprogress = function (e) {
+				if (e.lengthComputable && e.total) {
+					setProgress(Math.round((e.loaded / e.total) * 100), true, e.loaded, e.total);
+				}
+			};
+			xhr.onload = function () {
+				if (uploadXhr === xhr) {
+					uploadXhr = null;
+				}
+				$dropzone.removeClass('s2wp-uploading');
+				var resp = null;
+				try {
+					resp = JSON.parse(xhr.responseText);
+				} catch (err) {
+					resp = null;
+				}
+				if (xhr.status >= 200 && xhr.status < 300 && resp && resp.success && resp.data && resp.data.token) {
+					stagedToken = resp.data.token;
+					setProgress(100, true, file.size, file.size);
+					$dropzone.addClass('s2wp-has-file');
+					$dropzone.find('.s2wp-drop-check').prop('hidden', false);
+					$dropzone.find('.s2wp-drop-title').text(S2WP.strings.fileReady);
+					$dropzone.find('.s2wp-drop-hint').text(file.name);
+					$filename.text(file.name + ' (' + formatSize(file.size) + ')');
+					$('#s2wp-details').prop('hidden', false);
+					$submit.prop('disabled', false);
+					window.setTimeout(function () {
+						setProgress(0, false);
+					}, 800);
+				} else {
+					setProgress(0, false);
+					$dropzone.find('.s2wp-drop-title').text(S2WP.strings.dropHere);
+					errorNotice(resp, xhr);
+				}
+			};
+			xhr.onerror = function () {
+				if (uploadXhr === xhr) {
+					uploadXhr = null;
+				}
+				$dropzone.removeClass('s2wp-uploading');
+				setProgress(0, false);
+				$dropzone.find('.s2wp-drop-title').text(S2WP.strings.dropHere);
+				errorNotice(null, xhr);
+			};
+			xhr.onabort = function () {
+				if (uploadXhr === xhr) {
+					uploadXhr = null;
+				}
+				$dropzone.removeClass('s2wp-uploading');
+				setProgress(0, false);
+			};
+			xhr.send(data);
 		}
 
 		if ($form.is('form')) {
@@ -210,7 +352,7 @@
 		var $submit = $('#s2wp-submit');
 		var $result = $('#s2wp-result');
 
-		if (!$fileInput[0].files.length) {
+		if (!stagedToken && !($fileInput[0].files && $fileInput[0].files.length)) {
 			showNotice(S2WP.strings.noFile, 'warning');
 			return;
 		}
@@ -219,9 +361,13 @@
 		var data = new FormData();
 		data.append('action', 's2wp_save');
 		data.append('nonce', S2WP.nonce);
-		data.append('landing_file', $fileInput[0].files[0]);
 		data.append('landing_name', $('#s2wp-name').val() || '');
 		data.append('page_id', pageId || '0');
+		if (stagedToken) {
+			data.append('stage_token', stagedToken);
+		} else {
+			data.append('landing_file', $fileInput[0].files[0]);
+		}
 		var ctx = editorContext();
 		if (ctx) {
 			data.append('context', ctx);
@@ -230,28 +376,45 @@
 		$submit.prop('disabled', true);
 		$form.toggleClass('s2wp-busy', true);
 		clearLog();
-		logLine(S2WP.strings.uploading, 'info');
 		$result.prop('hidden', true).empty();
+		if (!stagedToken) {
+			setProgress(0, true);
+		}
 
 		$.ajax({
 			url: S2WP.ajaxUrl,
 			type: 'POST',
 			data: data,
 			processData: false,
-			contentType: false
+			contentType: false,
+			xhr: function () {
+				var xhr = $.ajaxSettings.xhr();
+				if (!stagedToken && xhr.upload) {
+					xhr.upload.addEventListener('progress', function (e) {
+						if (e.lengthComputable) {
+							setProgress(Math.round((e.loaded / e.total) * 100), true);
+						}
+					});
+				}
+				return xhr;
+			}
 		})
 			.done(function (resp) {
 				if (resp && resp.success) {
+					stagedToken = '';
+					setProgress(100, true);
 					if (editorContext()) {
 						window.location.reload();
 						return;
 					}
 					renderSuccess(resp.data);
 				} else {
+					setProgress(0, false);
 					errorNotice(resp, null);
 				}
 			})
 			.fail(function (xhr) {
+				setProgress(0, false);
 				errorNotice(null, xhr);
 			})
 			.always(function () {
@@ -457,8 +620,8 @@
 
 	$(document).on('click', '#s2wp-open-replace', function (e) {
 		e.preventDefault();
+		$('.s2wp-live, .s2wp-versions').prop('hidden', true);
 		$('#s2wp-replace-wrap').prop('hidden', false);
-		$(this).hide();
 	});
 
 	$(document).on('click', '#s2wp-show-editor', function (e) {
@@ -523,7 +686,7 @@
 			});
 	});
 
-	function uploadNewVersion(file, id, nonce, $busy) {
+	function uploadNewVersion(file, id, nonce) {
 		if (!file || !id || !nonce) {
 			return;
 		}
@@ -536,6 +699,13 @@
 			return;
 		}
 
+		var $drop = $('#s2wp-canvas-drop');
+		$drop.addClass('s2wp-uploading');
+		$drop.find('.s2wp-drop-title').text('0%');
+		$drop.find('.s2wp-drop-hint').text(file.name + ' (' + formatSize(file.size) + ')');
+		$drop.find('.s2wp-drop-actions').prop('hidden', true);
+		setProgress(0, true, 0, file.size);
+
 		var data = new FormData();
 		data.append('action', 's2wp_new_version');
 		data.append('id', id);
@@ -546,37 +716,58 @@
 			data.append('context', ctx);
 		}
 
-		if ($busy) {
-			$busy.addClass('s2wp-busy').prop('disabled', true);
-		}
-
-		$.ajax({
-			url: S2WP.ajaxUrl,
-			type: 'POST',
-			data: data,
-			processData: false,
-			contentType: false
-		})
-			.done(function (resp) {
-				if (resp && resp.success) {
-					if (ctx) {
-						applyEditorHtml(resp.data);
-					} else {
-						window.location.reload();
-					}
-					showNotice(resp.data.message, 'success');
+		var xhr = new window.XMLHttpRequest();
+		uploadXhr = xhr;
+		xhr.open('POST', S2WP.ajaxUrl);
+		xhr.upload.onprogress = function (e) {
+			if (e.lengthComputable && e.total) {
+				setProgress(Math.round((e.loaded / e.total) * 100), true, e.loaded, e.total);
+			}
+		};
+		xhr.onload = function () {
+			if (uploadXhr === xhr) {
+				uploadXhr = null;
+			}
+			$drop.removeClass('s2wp-uploading');
+			var resp = null;
+			try {
+				resp = JSON.parse(xhr.responseText);
+			} catch (err) {
+				resp = null;
+			}
+			if (xhr.status >= 200 && xhr.status < 300 && resp && resp.success) {
+				setProgress(100, true, file.size, file.size);
+				if (ctx) {
+					applyEditorHtml(resp.data);
 				} else {
-					errorNotice(resp, null);
+					window.location.reload();
 				}
-			})
-			.fail(function (xhr) {
-				errorNotice(null, xhr);
-			})
-			.always(function () {
-				if ($busy) {
-					$busy.removeClass('s2wp-busy').prop('disabled', false);
-				}
-			});
+				showNotice(resp.data.message, 'success');
+			} else {
+				setProgress(0, false);
+				$drop.find('.s2wp-drop-title').text(S2WP.strings.dropHere);
+				$drop.find('.s2wp-drop-actions').prop('hidden', false);
+				errorNotice(resp, xhr);
+			}
+		};
+		xhr.onerror = function () {
+			if (uploadXhr === xhr) {
+				uploadXhr = null;
+			}
+			$drop.removeClass('s2wp-uploading');
+			setProgress(0, false);
+			$drop.find('.s2wp-drop-actions').prop('hidden', false);
+			errorNotice(null, xhr);
+		};
+		xhr.onabort = function () {
+			if (uploadXhr === xhr) {
+				uploadXhr = null;
+			}
+			$drop.removeClass('s2wp-uploading');
+			setProgress(0, false);
+			$drop.find('.s2wp-drop-actions').prop('hidden', false);
+		};
+		xhr.send(data);
 	}
 
 	var pendingCanvasFile = null;
@@ -594,10 +785,8 @@
 			return;
 		}
 		pendingCanvasFile = file;
-		$('#s2wp-drop-name').text(file.name + ' (' + formatSize(file.size) + ')');
-		$('#s2wp-canvas-drop').addClass('s2wp-ready');
-		$('.s2wp-drop-idle').prop('hidden', true);
-		$('.s2wp-drop-ready').prop('hidden', false);
+		var $drop = $('#s2wp-canvas-drop');
+		uploadNewVersion(file, $drop.data('id'), $drop.data('nonce'));
 	}
 
 	function clearCanvasFile() {
@@ -609,10 +798,10 @@
 	}
 
 	$(document).on('click keydown', '#s2wp-canvas-drop', function (e) {
-		if ($(e.target).closest('#s2wp-drop-confirm, #s2wp-drop-cancel').length) {
+		if ($(e.target).closest('#s2wp-drop-confirm, #s2wp-drop-cancel, #s2wp-replace-cancel').length) {
 			return;
 		}
-		if ($('#s2wp-canvas-drop').hasClass('s2wp-ready')) {
+		if ($('#s2wp-canvas-drop').hasClass('s2wp-uploading')) {
 			return;
 		}
 		if (e.type === 'keydown' && e.which !== 13 && e.which !== 32) {
@@ -638,10 +827,13 @@
 		uploadNewVersion(pendingCanvasFile, $drop.data('id'), $drop.data('nonce'), $drop);
 	});
 
-	$(document).on('click', '#s2wp-drop-cancel', function (e) {
+	$(document).on('click', '#s2wp-drop-cancel, #s2wp-replace-cancel', function (e) {
 		e.preventDefault();
 		e.stopPropagation();
+		abandonUpload();
 		clearCanvasFile();
+		$('#s2wp-replace-wrap').prop('hidden', true);
+		$('.s2wp-live, .s2wp-versions').prop('hidden', false);
 	});
 
 	$(document).on('dragenter dragover', '#s2wp-canvas-drop', function (e) {
@@ -705,6 +897,39 @@
 			});
 	});
 
+	$(document).on('click', '.s2wp-delete-file', function () {
+		var $btn = $(this);
+		if (!window.confirm(S2WP.strings.confirmFile)) {
+			return;
+		}
+
+		$btn.prop('disabled', true);
+		$.post(S2WP.ajaxUrl, {
+			action: 's2wp_delete_file',
+			kind: $btn.data('kind'),
+			id: $btn.data('id'),
+			nonce: $btn.data('nonce')
+		})
+			.done(function (resp) {
+				if (resp && resp.success) {
+					if ($btn.data('kind') === 'staged' && String($btn.data('id')) === String(stagedToken)) {
+						stagedToken = '';
+					}
+					$btn.closest('tr').fadeOut(300, function () {
+						$(this).remove();
+					});
+					showNotice(resp.data.message, 'success');
+				} else {
+					errorNotice(resp, null);
+					$btn.prop('disabled', false);
+				}
+			})
+			.fail(function (xhr) {
+				errorNotice(null, xhr);
+				$btn.prop('disabled', false);
+			});
+	});
+
 	$(document).on('click', '.s2wp-delete', function () {
 		var $btn = $(this);
 
@@ -752,11 +977,12 @@
 	 * Live filter on the landings table
 	 * ------------------------------------------------------------- */
 
-	$(document).on('input', '#s2wp-search', function () {
+	$(document).on('input', '#s2wp-search, #s2wp-search-files', function () {
 		var q = this.value.toLowerCase();
+		var $card = $(this).closest('.s2wp-card');
 		var visible = 0;
 
-		$('.s2wp-table tbody tr').each(function () {
+		$card.find('.s2wp-table tbody tr').each(function () {
 			var match = $(this).text().toLowerCase().indexOf(q) !== -1;
 			$(this).toggle(match);
 			if (match) {
@@ -764,7 +990,7 @@
 			}
 		});
 
-		$('.s2wp-no-results').prop('hidden', visible > 0);
+		$card.find('.s2wp-no-results').prop('hidden', visible > 0);
 	});
 
 	/* ---------------------------------------------------------------
@@ -786,6 +1012,23 @@
 		$('#s2wp-log').empty();
 	}
 
+	function setProgress(pct, show, loaded, total) {
+		pct = Math.max(0, Math.min(100, Math.round(Number(pct) || 0)));
+		var $wrap = $('#s2wp-progress');
+		var $zone = $('#s2wp-dropzone');
+		if (show) {
+			$wrap.removeAttr('hidden');
+		} else {
+			$wrap.attr('hidden', 'hidden');
+		}
+		$wrap.find('.s2wp-progress-fill').css('width', pct + '%');
+		$wrap.find('.s2wp-progress-bar').attr('aria-valuenow', pct);
+		if (typeof loaded === 'number' && typeof total === 'number' && total > 0) {
+			$('#s2wp-progress-pct').text(formatSize(loaded) + ' / ' + formatSize(total));
+		}
+		$('#s2wp-dropzone.s2wp-uploading .s2wp-drop-title, #s2wp-canvas-drop.s2wp-uploading .s2wp-drop-title').text(show ? (pct + '%') : '');
+	}
+
 	function formatSize(bytes) {
 		if (bytes < 1024) return bytes + ' B';
 		if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
@@ -797,4 +1040,39 @@
 	}
 
 	$(initUploadUI);
+	initAdminTabs();
+
+	/**
+	 * Hash-based tabs on Pages → Static2WP (Upload / Pages).
+	 */
+	function initAdminTabs() {
+		var $wrap = $('.s2wp-wrap');
+		if (!$wrap.length) {
+			return;
+		}
+
+		function showTab(id) {
+			var hash = (id && id.charAt(0) === '#') ? id : '#s2wp-tab-upload';
+			if (!$wrap.find(hash).hasClass('s2wp-tab')) {
+				hash = '#s2wp-tab-upload';
+			}
+			$wrap.find('.s2wp-tab').prop('hidden', true);
+			$wrap.find(hash).prop('hidden', false);
+			$wrap.find('.nav-tab').removeClass('nav-tab-active');
+			$wrap.find('.nav-tab[href="' + hash + '"]').addClass('nav-tab-active');
+		}
+
+		$wrap.on('click', '.nav-tab', function (e) {
+			e.preventDefault();
+			var hash = $(this).attr('href');
+			if (window.history && window.history.replaceState) {
+				window.history.replaceState(null, '', hash);
+			} else {
+				window.location.hash = hash;
+			}
+			showTab(hash);
+		});
+
+		showTab(window.location.hash || '#s2wp-tab-upload');
+	}
 })(jQuery);

@@ -96,6 +96,9 @@ class S2WP_Metabox {
 					'badType'        => __( 'Only HTML or ZIP files are allowed.', 'static2wp' ),
 					'tooBig'         => __( 'File is larger than 100 MB.', 'static2wp' ),
 					'uploading'      => __( 'Uploading…', 'static2wp' ),
+					'dropHere'       => __( 'Drop a file here', 'static2wp' ),
+					'fileReady'      => __( 'File ready', 'static2wp' ),
+					'leaveUnsaved'   => __( 'The file is not on a page yet. Leave anyway? The uploaded file will be deleted.', 'static2wp' ),
 					'error'          => __( 'Something went wrong. Try again.', 'static2wp' ),
 					'confirmVersion' => __( 'Delete this older file?', 'static2wp' ),
 					'confirmDelete'  => __( 'Remove the file from this page? The page itself stays.', 'static2wp' ),
@@ -226,13 +229,15 @@ class S2WP_Metabox {
 					<div class="s2wp-drop-idle">
 						<p class="s2wp-drop-title"><?php esc_html_e( 'Drop the new file', 'static2wp' ); ?></p>
 						<p class="s2wp-drop-hint"><?php esc_html_e( 'or click to choose', 'static2wp' ); ?></p>
-					</div>
-					<div class="s2wp-drop-ready" hidden>
-						<p class="s2wp-drop-title" id="s2wp-drop-name"></p>
-						<div class="s2wp-drop-actions">
-							<button type="button" class="button button-primary" id="s2wp-drop-confirm"><?php esc_html_e( 'Use this file', 'static2wp' ); ?></button>
-							<button type="button" class="button" id="s2wp-drop-cancel"><?php esc_html_e( 'Cancel', 'static2wp' ); ?></button>
+						<div id="s2wp-progress" class="s2wp-progress" hidden>
+							<div class="s2wp-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+								<span class="s2wp-progress-fill"></span>
+							</div>
+							<p class="s2wp-progress-label" dir="ltr"><span id="s2wp-progress-pct">0%</span></p>
 						</div>
+						<p class="s2wp-drop-actions">
+							<button type="button" class="button" id="s2wp-replace-cancel"><?php esc_html_e( 'Cancel', 'static2wp' ); ?></button>
+						</p>
 					</div>
 				</div>
 			</div>
@@ -296,6 +301,12 @@ class S2WP_Metabox {
 								<p class="s2wp-drop-title"><?php esc_html_e( 'Drop a file here', 'static2wp' ); ?></p>
 								<p class="s2wp-drop-hint"><?php esc_html_e( 'or click to choose — HTML or ZIP', 'static2wp' ); ?></p>
 								<span id="s2wp-filename" class="s2wp-filename"></span>
+								<div id="s2wp-progress" class="s2wp-progress" hidden>
+									<div class="s2wp-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+										<span class="s2wp-progress-fill"></span>
+									</div>
+									<p class="s2wp-progress-label" dir="ltr"><span id="s2wp-progress-pct">0%</span></p>
+								</div>
 							</div>
 						</div>
 						<p class="s2wp-drop-actions">

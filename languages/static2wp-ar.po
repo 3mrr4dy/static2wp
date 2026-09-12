@@ -1,0 +1,381 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Static2WP 1.9.2\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 ? 4 : 5);\n"
+"X-Domain: static2wp\n"
+
+msgid "Static2WP"
+msgstr "Static2WP"
+
+msgid "Choose a file first."
+msgstr "اختر ملفًا أولًا."
+
+msgid "Only HTML or ZIP files are allowed."
+msgstr "يُسمح بملفات HTML أو ZIP فقط."
+
+msgid "File is larger than 100 MB."
+msgstr "الملف أكبر من 100 ميغابايت."
+
+msgid "Uploading…"
+msgstr "جاري الرفع…"
+
+msgid "Drop a file here"
+msgstr "أفلت ملفًا هنا"
+
+msgid "File ready"
+msgstr "الملف جاهز"
+
+msgid "The file is not on a page yet. Leave anyway? The uploaded file will be deleted."
+msgstr "الملف غير مربوط بصفحة بعد. هل تريد المغادرة؟ سيتم حذف الملف المرفوع."
+
+msgid "Something went wrong. Try again."
+msgstr "حدث خطأ. حاول مرة أخرى."
+
+msgid "Delete this older file?"
+msgstr "حذف هذا الملف الأقدم؟"
+
+msgid "Remove the file from this page? The page itself stays."
+msgstr "إزالة الملف من هذه الصفحة؟ الصفحة نفسها تبقى."
+
+msgid "Delete this file? This cannot be undone."
+msgstr "حذف هذا الملف؟ لا يمكن التراجع."
+
+msgid "Edit page text"
+msgstr "تعديل نص الصفحة"
+
+msgid "Hide page text"
+msgstr "إخفاء نص الصفحة"
+
+msgid "Active"
+msgstr "نشط"
+
+msgid "View page"
+msgstr "عرض الصفحة"
+
+msgid "Reload this page to manage your landings."
+msgstr "أعد تحميل هذه الصفحة لإدارة ملفاتك."
+
+msgid "Dismiss this notice."
+msgstr "إغلاق هذا التنبيه."
+
+msgid "You do not have permission to access this page."
+msgstr "ليست لديك صلاحية لعرض هذه الصفحة."
+
+msgid "Upload a file. We create a page for it. Visitors see the file — not the theme, not a builder."
+msgstr "ارفع ملفًا. ننشئ له صفحة. الزائر يرى الملف — ليس القالب ولا المنشئ."
+
+msgid "Static2WP sections"
+msgstr "أقسام Static2WP"
+
+msgid "Upload"
+msgstr "رفع"
+
+msgid "Pages"
+msgstr "الصفحات"
+
+msgid "Files"
+msgstr "الملفات"
+
+msgid "or click to choose — HTML or ZIP"
+msgstr "أو انقر للاختيار — HTML أو ZIP"
+
+msgid "Page name"
+msgstr "اسم الصفحة"
+
+msgid "Summer offer"
+msgstr "عرض صيفي"
+
+msgid "Or attach to an existing page"
+msgstr "أو اربطه بصفحة موجودة"
+
+msgid "Publish page"
+msgstr "نشر الصفحة"
+
+msgid "New page"
+msgstr "صفحة جديدة"
+
+msgid "(no title)"
+msgstr "(بدون عنوان)"
+
+msgid "Pages with a file"
+msgstr "صفحات عليها ملف"
+
+msgid "Search…"
+msgstr "بحث…"
+
+msgid "No pages yet"
+msgstr "لا توجد صفحات بعد"
+
+msgid "Upload a file above, or open any page and upload it there."
+msgstr "ارفع ملفًا أعلاه، أو افتح أي صفحة وارفعه هناك."
+
+msgid "Name"
+msgstr "الاسم"
+
+msgid "Page"
+msgstr "الصفحة"
+
+msgid "Visitors see"
+msgstr "الزائر يرى"
+
+msgid "Actions"
+msgstr "إجراءات"
+
+msgid "Page deleted"
+msgstr "الصفحة محذوفة"
+
+msgid "The file"
+msgstr "الملف"
+
+msgid "Normal page"
+msgstr "الصفحة العادية"
+
+msgid "View"
+msgstr "عرض"
+
+msgid "Edit"
+msgstr "تعديل"
+
+msgid "Use normal page"
+msgstr "استخدم الصفحة العادية"
+
+msgid "Show file"
+msgstr "اعرض الملف"
+
+msgid "Remove file"
+msgstr "أزل الملف"
+
+msgid "Nothing matches."
+msgstr "لا توجد نتائج."
+
+msgid "No files yet"
+msgstr "لا توجد ملفات بعد"
+
+msgid "Upload a file first. Unused files can be deleted here."
+msgstr "ارفع ملفًا أولًا. الملفات غير المستخدمة يمكن حذفها هنا."
+
+msgid "File"
+msgstr "ملف"
+
+msgid "Size"
+msgstr "الحجم"
+
+msgid "Not attached"
+msgstr "غير مربوط"
+
+msgid "In use"
+msgstr "قيد الاستخدام"
+
+msgid "Delete"
+msgstr "حذف"
+
+msgid "Permission denied. Publishing a raw HTML page requires the \"unfiltered_html\" capability."
+msgstr "رفض الإذن. نشر صفحة HTML خام يتطلب صلاحية unfiltered_html."
+
+msgid "Permission denied."
+msgstr "رفض الإذن."
+
+msgid "Invalid file."
+msgstr "ملف غير صالح."
+
+msgid "Security check failed. Please reload the page and try again."
+msgstr "فشل التحقق الأمني. أعد تحميل الصفحة وحاول مرة أخرى."
+
+msgid "Could not delete that file."
+msgstr "تعذر حذف هذا الملف."
+
+msgid "File deleted."
+msgstr "تم حذف الملف."
+
+msgid "This file is attached to a page and cannot be deleted."
+msgstr "هذا الملف مربوط بصفحة ولا يمكن حذفه."
+
+msgid "Security check failed."
+msgstr "فشل التحقق الأمني."
+
+msgid "\"%s\" is now live."
+msgstr "«%s» أصبحت مباشرة الآن."
+
+msgid "Visitors will see the file."
+msgstr "الزائر سيرى الملف."
+
+msgid "Visitors will see the normal page."
+msgstr "الزائر سيرى الصفحة العادية."
+
+msgid "The new file is now live."
+msgstr "الملف الجديد مباشر الآن."
+
+msgid "Rolled back to version %d — it is now live."
+msgstr "تم الرجوع إلى الإصدار %d — وهو مباشر الآن."
+
+msgid "This is the only version — delete the landing itself instead."
+msgstr "هذا هو الإصدار الوحيد — احذف الملف نفسه بدلًا من ذلك."
+
+msgid "Older file deleted."
+msgstr "تم حذف الملف الأقدم."
+
+msgid "Version not found."
+msgstr "الإصدار غير موجود."
+
+msgid "File removed from the page."
+msgstr "تمت إزالة الملف من الصفحة."
+
+msgid "This landing page no longer exists."
+msgstr "هذه الصفحة لم تعد موجودة."
+
+msgid "Visitors see the file"
+msgstr "الزائر يرى الملف"
+
+msgid "Visitors see the normal page"
+msgstr "الزائر يرى الصفحة العادية"
+
+msgid "This file is live. Visitors see it instead of the WordPress editor."
+msgstr "هذا الملف مباشر. الزائر يراه بدل محرر ووردبريس."
+
+msgid "File is saved. Visitors still see the normal page."
+msgstr "الملف محفوظ. الزائر ما زال يرى الصفحة العادية."
+
+msgid "Replace file"
+msgstr "استبدال الملف"
+
+msgid "Drop the new file"
+msgstr "أفلت الملف الجديد"
+
+msgid "or click to choose"
+msgstr "أو انقر للاختيار"
+
+msgid "Use this file"
+msgstr "استخدم هذا الملف"
+
+msgid "Cancel"
+msgstr "إلغاء"
+
+msgid "Current"
+msgstr "الحالي"
+
+msgid "Use this"
+msgstr "استخدم هذا"
+
+msgid "Save the page first, then you can show a file here."
+msgstr "احفظ الصفحة أولًا، ثم يمكنك عرض ملف هنا."
+
+msgid "Show a file on this page"
+msgstr "اعرض ملفًا على هذه الصفحة"
+
+msgid "Show this file"
+msgstr "اعرض هذا الملف"
+
+msgid "On"
+msgstr "تشغيل"
+
+msgid "Off"
+msgstr "إيقاف"
+
+msgid "Could not create the landing directory."
+msgstr "تعذر إنشاء مجلد الملف."
+
+msgid "Could not store the uploaded file."
+msgstr "تعذر حفظ الملف المرفوع."
+
+msgid "Stored single HTML file as index.html."
+msgstr "تم حفظ ملف HTML باسم index.html."
+
+msgid "Only .html and .zip files are supported."
+msgstr "يُدعم ملفات .html و .zip فقط."
+
+msgid "The PHP ZipArchive extension is not available on this server."
+msgstr "إضافة PHP ZipArchive غير متوفرة على هذا الخادم."
+
+msgid "The uploaded file is not a valid ZIP archive."
+msgstr "الملف المرفوع ليس أرشيف ZIP صالحًا."
+
+msgid "Skipped file (type not allowed): %s"
+msgstr "تم تخطي ملف (نوع غير مسموح): %s"
+
+msgid "Skipped HTML file over 2 MB: %s"
+msgstr "تم تخطي ملف HTML أكبر من 2 ميغابايت: %s"
+
+msgid "The ZIP expands to more than 500 MB — refusing to extract it."
+msgstr "ملف ZIP يتوسع لأكثر من 500 ميغابايت — لن يتم فكّه."
+
+msgid "The ZIP contains no usable files."
+msgstr "ملف ZIP لا يحتوي ملفات صالحة."
+
+msgid "Could not extract the ZIP archive."
+msgstr "تعذر فك أرشيف ZIP."
+
+msgid "The ZIP contains an unsafe path."
+msgstr "ملف ZIP يحتوي مسارًا غير آمن."
+
+msgid "Detected wrapping folder \"%s\" — moved contents up."
+msgstr "تم اكتشاف مجلد تغليف «%s» — نُقل المحتوى للأعلى."
+
+msgid "No .html file found in the uploaded ZIP."
+msgstr "لا يوجد ملف .html داخل ZIP المرفوع."
+
+msgid "No index.html found — using \"%s\" as the entry page."
+msgstr "لا يوجد index.html — سيتم استخدام «%s» كصفحة الدخول."
+
+msgid "The uploaded file expired. Please choose the file again."
+msgstr "انتهت صلاحية الملف المرفوع. اختر الملف مرة أخرى."
+
+msgid "You are not allowed to publish new pages."
+msgstr "غير مسموح لك بنشر صفحات جديدة."
+
+msgid "You are not allowed to edit that page."
+msgstr "غير مسموح لك بتعديل تلك الصفحة."
+
+msgid "Could not create the page. Please try again."
+msgstr "تعذر إنشاء الصفحة. حاول مرة أخرى."
+
+msgid "Please choose a valid page."
+msgstr "اختر صفحة صالحة."
+
+msgid "Save the page first, then upload the file."
+msgstr "احفظ الصفحة أولًا، ثم ارفع الملف."
+
+msgid "That page already has a landing assigned. Replace its file or delete it first."
+msgstr "هذه الصفحة مربوط بها ملف بالفعل. استبدل ملفها أو احذفه أولًا."
+
+msgid "The uploads directory is not writable."
+msgstr "مجلد الرفع غير قابل للكتابة."
+
+msgid "The file is too large for this server."
+msgstr "الملف أكبر مما يسمح به هذا الخادم."
+
+msgid "The upload was incomplete — please try again."
+msgstr "الرفع لم يكتمل — حاول مرة أخرى."
+
+msgid "No file was uploaded."
+msgstr "لم يُرفع أي ملف."
+
+msgid "Upload failed. Please try again."
+msgstr "فشل الرفع. حاول مرة أخرى."
+
+msgid "That file does not look like a real .html or .zip file."
+msgstr "هذا الملف لا يبدو ملف .html أو .zip حقيقيًا."
+
+msgid "The HTML file is larger than 2 MB."
+msgstr "ملف HTML أكبر من 2 ميغابايت."
+
+msgid "No file path given."
+msgstr "لم يُحدد مسار الملف."
+
+msgid "That file does not exist or is not readable."
+msgstr "هذا الملف غير موجود أو غير قابل للقراءة."
+
+msgid "Upload an HTML or ZIP file and that page shows the file to visitors — not the theme. Create a page from a file, or attach one while editing."
+msgstr "ارفع ملف HTML أو ZIP وتعرض الصفحة الملف للزائر — وليس القالب. أنشئ صفحة من ملف، أو اربطه أثناء التحرير."
+
+msgid "Extracted %d file."
+msgid_plural "Extracted %d files."
+msgstr[0] "لم يُستخرج أي ملف."
+msgstr[1] "تم استخراج ملف واحد."
+msgstr[2] "تم استخراج ملفين."
+msgstr[3] "تم استخراج %d ملفات."
+msgstr[4] "تم استخراج %d ملفًا."
+msgstr[5] "تم استخراج %d ملف."

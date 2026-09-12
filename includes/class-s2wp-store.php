@@ -486,12 +486,13 @@ class S2WP_Store {
 	 * Capabilities: creating a new page requires publish_pages; attaching to
 	 * an existing page requires edit_post for that page.
 	 *
-	 * @param int    $page_id  WordPress page ID (0 = create a new page).
-	 * @param string $name     Landing name (falls back to the page title).
-	 * @param string $file_key Key in $_FILES.
+	 * @param int    $page_id     WordPress page ID (0 = create a new page).
+	 * @param string $name        Landing name (falls back to the page title).
+	 * @param string $file_key    Key in $_FILES.
+	 * @param string $stage_token Optional token from a prior ajax_stage upload.
 	 * @return array Outcome: success, id, name, view_url, page_id, page, type, log, error.
 	 */
-	public static function create_for_page( $page_id, $name, $file_key ) {
+	public static function create_for_page( $page_id, $name, $file_key, $stage_token = '' ) {
 		$outcome = array(
 			'success'  => false,
 			'id'       => '',
@@ -504,10 +505,22 @@ class S2WP_Store {
 			'error'    => '',
 		);
 
-		$file_error = self::validate_upload( $file_key );
-		if ( $file_error ) {
-			$outcome['error'] = $file_error;
+		$staged = '' !== $stage_token ? self::get_stage( $stage_token ) : null;
+		if ( $stage_token && ! $staged ) {
+			$outcome['error'] = __( 'The uploaded file expired. Please choose the file again.', 'static2wp' );
 			return $outcome;
+		}
+
+		$source_name = '';
+		if ( $staged ) {
+			$source_name = $staged['name'];
+		} else {
+			$file_error = self::validate_upload( $file_key );
+			if ( $file_error ) {
+				$outcome['error'] = $file_error;
+				return $outcome;
+			}
+			$source_name = isset( $_FILES[ $file_key ]['name'] ) ? (string) $_FILES[ $file_key ]['name'] : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
 		}
 
 		$page_id = absint( $page_id );
@@ -526,7 +539,7 @@ class S2WP_Store {
 		if ( ! $page ) {
 			$name = trim( (string) $name );
 			if ( '' === $name ) {
-				$name = pathinfo( $_FILES[ $file_key ]['name'], PATHINFO_FILENAME ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+				$name = pathinfo( $source_name, PATHINFO_FILENAME );
 			}
 			$page_id = wp_insert_post(
 				array(
@@ -567,19 +580,27 @@ class S2WP_Store {
 
 		$name = trim( (string) $name );
 		if ( '' === $name ) {
-			$name = '' !== trim( $page->post_title ) ? $page->post_title : pathinfo( $_FILES[ $file_key ]['name'], PATHINFO_FILENAME );
+			$name = '' !== trim( $page->post_title ) ? $page->post_title : pathinfo( $source_name, PATHINFO_FILENAME );
 		}
 
 		$id  = self::new_id();
 		$dir = self::landing_dir( $id );
 
 		try {
-			$stored = self::store_upload( $dir, $_FILES[ $file_key ] );
+			if ( $staged ) {
+				$stored = self::store_from_path( $dir, $staged['path'] );
+			} else {
+				$stored = self::store_upload( $dir, $_FILES[ $file_key ] );
+			}
 		} catch ( Exception $e ) {
 			self::remove_dir( $dir );
 			$outcome['log']   = array( $e->getMessage() );
 			$outcome['error'] = $e->getMessage();
 			return $outcome;
+		}
+
+		if ( $staged ) {
+			self::release_stage( $stage_token );
 		}
 
 		$now = current_time( 'mysql' );
@@ -670,6 +691,207 @@ class S2WP_Store {
 		}
 
 		return '';
+	}
+
+	/**
+	 * Park an HTTP upload in a staging folder and return a short-lived token.
+	 *
+	 * @param string $file_key Key in $_FILES.
+	 * @return array{token?:string,name?:string,size?:int,error?:string}
+	 */
+	public static function stage_upload( $file_key ) {
+		$error = self::validate_upload( $file_key );
+		if ( $error ) {
+			return array( 'error' => $error );
+		}
+
+		$token = strtolower( wp_generate_password( 16, false, false ) );
+		$dir   = trailingslashit( self::base_dir() ) . '_staging/' . $token;
+		if ( ! wp_mkdir_p( $dir ) ) {
+			return array( 'error' => __( 'Could not create the landing directory.', 'static2wp' ) );
+		}
+
+		$name = sanitize_file_name( (string) $_FILES[ $file_key ]['name'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+		if ( '' === $name ) {
+			$name = 'upload.zip';
+		}
+		$dest = $dir . '/' . $name;
+		if ( ! move_uploaded_file( $_FILES[ $file_key ]['tmp_name'], $dest ) && ! copy( $_FILES[ $file_key ]['tmp_name'], $dest ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+			self::remove_dir( $dir );
+			return array( 'error' => __( 'Could not store the uploaded file.', 'static2wp' ) );
+		}
+
+		set_transient(
+			's2wp_stage_' . $token,
+			array(
+				'user' => get_current_user_id(),
+				'path' => $dest,
+				'name' => $name,
+			),
+			HOUR_IN_SECONDS
+		);
+
+		return array(
+			'token' => $token,
+			'name'  => $name,
+			'size'  => (int) filesize( $dest ),
+		);
+	}
+
+	/**
+	 * Read a staged file for the current user without consuming it.
+	 *
+	 * @param string $token Staging token.
+	 * @return array{path:string,name:string}|null
+	 */
+	public static function get_stage( $token ) {
+		$token = is_string( $token ) ? preg_replace( '/[^a-z0-9]/', '', strtolower( $token ) ) : '';
+		if ( '' === $token ) {
+			return null;
+		}
+
+		$data = get_transient( 's2wp_stage_' . $token );
+		if ( ! is_array( $data ) || (int) $data['user'] !== get_current_user_id() || empty( $data['path'] ) || ! is_file( $data['path'] ) ) {
+			return null;
+		}
+
+		return array(
+			'path' => $data['path'],
+			'name' => isset( $data['name'] ) ? $data['name'] : basename( $data['path'] ),
+		);
+	}
+
+	/**
+	 * Delete a staged upload after it has been published.
+	 *
+	 * @param string $token Staging token.
+	 */
+	public static function release_stage( $token ) {
+		$staged = self::get_stage( $token );
+		$token  = is_string( $token ) ? preg_replace( '/[^a-z0-9]/', '', strtolower( $token ) ) : '';
+		if ( '' !== $token ) {
+			delete_transient( 's2wp_stage_' . $token );
+		}
+		if ( $staged ) {
+			self::remove_dir( dirname( $staged['path'] ) );
+		}
+	}
+
+	/**
+	 * List unused staged uploads on disk.
+	 *
+	 * @return array<int,array{token:string,name:string,size:int}>
+	 */
+	public static function list_staged() {
+		$base = trailingslashit( self::base_dir() ) . '_staging';
+		if ( '' === self::base_dir() || ! is_dir( $base ) ) {
+			return array();
+		}
+
+		$user = get_current_user_id();
+		$out  = array();
+		$scan = scandir( $base );
+		if ( ! is_array( $scan ) ) {
+			return array();
+		}
+
+		foreach ( $scan as $token ) {
+			if ( '.' === $token || '..' === $token ) {
+				continue;
+			}
+			$token = preg_replace( '/[^a-z0-9]/', '', strtolower( $token ) );
+			$dir   = $base . '/' . $token;
+			if ( '' === $token || ! is_dir( $dir ) ) {
+				continue;
+			}
+
+			$data  = get_transient( 's2wp_stage_' . $token );
+			$owner = is_array( $data ) && isset( $data['user'] ) ? (int) $data['user'] : 0;
+			if ( $owner && $owner !== $user && ! current_user_can( 'manage_options' ) ) {
+				continue;
+			}
+
+			$name = is_array( $data ) && ! empty( $data['name'] ) ? $data['name'] : '';
+			$size = 0;
+			if ( is_array( $data ) && ! empty( $data['path'] ) && is_file( $data['path'] ) ) {
+				$size = (int) filesize( $data['path'] );
+			}
+			if ( '' === $name || ! $size ) {
+				$files = glob( $dir . '/*' );
+				if ( is_array( $files ) ) {
+					foreach ( $files as $file ) {
+						if ( is_file( $file ) ) {
+							if ( '' === $name ) {
+								$name = basename( $file );
+							}
+							if ( ! $size ) {
+								$size = (int) filesize( $file );
+							}
+							break;
+						}
+					}
+				}
+			}
+
+			$out[] = array(
+				'token' => $token,
+				'name'  => $name ? $name : $token,
+				'size'  => $size,
+			);
+		}
+
+		return $out;
+	}
+
+	/**
+	 * Whether a landing file can be deleted (not attached to a live page).
+	 *
+	 * @param string $id Landing ID.
+	 * @return bool
+	 */
+	public static function is_unlinked( $id ) {
+		$record = self::get( $id );
+		if ( ! $record ) {
+			return false;
+		}
+		$page_id = isset( $record['page_id'] ) ? (int) $record['page_id'] : 0;
+		if ( $page_id < 1 ) {
+			return true;
+		}
+		$page = get_post( $page_id );
+		return ! ( $page && 'page' === $page->post_type );
+	}
+
+	/**
+	 * Delete a staged upload by token (current user, or admin for orphans).
+	 *
+	 * @param string $token Staging token.
+	 * @return bool
+	 */
+	public static function delete_staged( $token ) {
+		$token = is_string( $token ) ? preg_replace( '/[^a-z0-9]/', '', strtolower( $token ) ) : '';
+		if ( '' === $token ) {
+			return false;
+		}
+
+		if ( self::get_stage( $token ) ) {
+			self::release_stage( $token );
+			return true;
+		}
+
+		$dir = trailingslashit( self::base_dir() ) . '_staging/' . $token;
+		if ( ! is_dir( $dir ) ) {
+			return false;
+		}
+
+		$data = get_transient( 's2wp_stage_' . $token );
+		if ( is_array( $data ) && isset( $data['user'] ) && (int) $data['user'] !== get_current_user_id() && ! current_user_can( 'manage_options' ) ) {
+			return false;
+		}
+
+		delete_transient( 's2wp_stage_' . $token );
+		self::remove_dir( $dir );
+		return true;
 	}
 
 	/**
@@ -767,16 +989,13 @@ class S2WP_Store {
 		}
 
 		$versions = self::normalize_versions( $record );
-		$v        = 1;
+		$v        = self::next_version_number( $id, $versions );
 		$now      = current_time( 'mysql' );
-		foreach ( $versions as $version ) {
-			$v = max( $v, (int) $version['v'] + 1 );
-		}
 
 		$dir = trailingslashit( self::landing_dir( $id ) ) . 'v-' . $v;
 		try {
 			$stored = self::store_from_path( $dir, $path );
-		} catch ( Exception $e ) {
+		} catch ( Throwable $e ) {
 			self::remove_dir( $dir );
 			return array(
 				'success' => false,
@@ -809,6 +1028,25 @@ class S2WP_Store {
 			'error'   => '',
 			'record'  => $record,
 		);
+	}
+
+	/**
+	 * Next version number whose v-N folder does not already exist.
+	 *
+	 * @param string $id       Landing ID.
+	 * @param array  $versions Existing versions.
+	 * @return int
+	 */
+	public static function next_version_number( $id, $versions ) {
+		$v = 1;
+		foreach ( $versions as $version ) {
+			$v = max( $v, (int) $version['v'] + 1 );
+		}
+		$base = trailingslashit( self::landing_dir( $id ) );
+		while ( is_dir( $base . 'v-' . $v ) ) {
+			$v++;
+		}
+		return $v;
 	}
 
 	/**

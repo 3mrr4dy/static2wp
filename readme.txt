@@ -4,7 +4,7 @@ Tags: landing page, html, static page, page template, upload
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.8.0
+Stable tag: 1.8.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -39,10 +39,9 @@ Have a ready-made landing page (an exported HTML file, a ThemeForest landing, an
 * Table of pages that already have a file: view, edit, switch visitors between the file and the normal page, or remove the file.
 * Live search filter.
 
-= Global tracking codes (GTM & co.) =
+= Tracking and SEO =
 
-* Paste your **head code** (GTM script, analytics, pixels) and **body code** (GTM noscript) once under Pages → Page file → Tracking codes.
-* Injected into **landing pages** (which bypass the theme) and — optionally — into **all regular pages/posts** too.
+Landing pages inherit the site's `wp_head` / `wp_footer` output (GTM, analytics, Rank Math / Yoast, site icon). There is no separate tracking-codes screen.
 
 = SEO =
 
@@ -65,7 +64,6 @@ Because full-takeover bypasses the theme, the plugin inherits WordPress (and SEO
 * ZIP members are extracted one-by-one onto an allow-list of extensions (no `extractTo()`, no symlinks). SVG is blocked by design.
 * Publishing raw HTML requires the `unfiltered_html` capability. Creating a new page requires `publish_pages`; attaching to an existing page requires `edit_post` for that page.
 * Takeover responses send `nocache` headers so a page cache cannot pin stale HTML after deactivate or rollback.
-* Saving raw tracking code additionally requires `unfiltered_html`.
 
 == Installation ==
 
@@ -97,7 +95,7 @@ Yes. You can assign a file to the page set as your homepage under Settings → R
 
 = Will my GTM/analytics fire on landing pages? =
 
-Yes — paste it once under Pages → Page file → Tracking codes. It's injected into every landing page, and optionally into all regular pages and posts as well.
+Yes. Codes already on the site (theme, Rank Math, GTM plugins) are merged into the landing via `wp_head` / `wp_footer`.
 
 = Where do I set the meta description for a landing? =
 
@@ -121,6 +119,12 @@ There is no browser upload. `--file` is a path on the machine running `wp`; `--u
 * SVG uploads are blocked by design (they can execute script when opened directly).
 
 == Changelog ==
+
+= 1.8.2 =
+* Removed the Tracking codes screen. Site head/footer codes already merge into landings.
+
+= 1.8.1 =
+* Admin screen uses WordPress nav tabs: Upload, Pages, Tracking.
 
 = 1.8.0 =
 * New: WP-CLI command group `wp s2wp` — list, get, add, version, activate, deactivate, rollback, delete-version, delete.
