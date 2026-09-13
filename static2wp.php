@@ -3,7 +3,7 @@
  * Plugin Name:       Static2WP
  * Plugin URI:        https://github.com/3mrr4dy/static2wp
  * Description:       Upload an HTML or ZIP file and that page shows the file to visitors — not the theme. Create a page from a file, or attach one while editing.
- * Version:           1.9.7
+ * Version:           1.9.8
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * Author:            Amr Rady
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'S2WP_VERSION', '1.9.7' );
+define( 'S2WP_VERSION', '1.9.8' );
 define( 'S2WP_PLUGIN_FILE', __FILE__ );
 define( 'S2WP_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'S2WP_PLUGIN_URL', plugin_dir_url( __FILE__ ) );

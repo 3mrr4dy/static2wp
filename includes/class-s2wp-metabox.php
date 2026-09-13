@@ -23,8 +23,7 @@ class S2WP_Metabox {
 		add_filter( 'admin_body_class', array( __CLASS__, 'body_class' ) );
 		add_action( 'edit_form_after_title', array( __CLASS__, 'render_classic_canvas' ) );
 		add_action( 'admin_footer', array( __CLASS__, 'render_block_canvas_template' ) );
-		add_filter( 'manage_page_posts_columns', array( __CLASS__, 'add_column' ) );
-		add_action( 'manage_page_posts_custom_column', array( __CLASS__, 'render_column' ), 10, 2 );
+		add_filter( 'display_post_states', array( __CLASS__, 'post_states' ), 10, 2 );
 	}
 
 	/**
@@ -324,42 +323,19 @@ class S2WP_Metabox {
 	}
 
 	/**
-	 * Add a "Landing" column to the Pages list table.
+	 * Show "Static2WP" under the title on Pages, same pattern as Elementor.
 	 *
-	 * @param array $columns Existing columns.
-	 * @return array
+	 * @param string[] $post_states Existing states.
+	 * @param WP_Post  $post        Page.
+	 * @return string[]
 	 */
-	public static function add_column( $columns ) {
-		$columns['s2wp_landing'] = __( 'File', 'static2wp' );
-		return $columns;
-	}
-
-	/**
-	 * Render the "Landing" column.
-	 *
-	 * @param string $column  Column key.
-	 * @param int    $post_id Page ID.
-	 */
-	public static function render_column( $column, $post_id ) {
-		if ( 's2wp_landing' !== $column ) {
-			return;
+	public static function post_states( $post_states, $post ) {
+		if ( ! $post || 'page' !== $post->post_type ) {
+			return $post_states;
 		}
-
-		$landing = S2WP_Store::find_by_page( $post_id );
-		if ( ! $landing ) {
-			echo '<span aria-hidden="true">—</span>';
-			return;
+		if ( S2WP_Store::find_by_page( $post->ID ) ) {
+			$post_states['static2wp'] = 'Static2WP';
 		}
-
-		$is_active = ! empty( $landing['active'] );
-		$edit_url  = get_edit_post_link( $post_id );
-		if ( $is_active ) {
-			echo esc_html__( 'On', 'static2wp' );
-		} else {
-			echo esc_html__( 'Off', 'static2wp' );
-		}
-		if ( $edit_url ) {
-			echo ' <a href="' . esc_url( $edit_url ) . '">' . esc_html( $landing['name'] ) . '</a>';
-		}
+		return $post_states;
 	}
 }
